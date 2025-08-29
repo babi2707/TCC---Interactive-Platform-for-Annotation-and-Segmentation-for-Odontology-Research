@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Login } from "./login/login";
 
 @Component({
   selector: 'app-root',
-  imports: [Login],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrls: ['./app.scss']
 })
 export class App {
   protected title = 'frontend';
