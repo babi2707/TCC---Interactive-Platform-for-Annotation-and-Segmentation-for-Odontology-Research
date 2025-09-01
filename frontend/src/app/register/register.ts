@@ -12,6 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { merge } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ApiService } from '../api.services';
 
 @Component({
   selector: 'app-register',
@@ -41,7 +42,6 @@ export class Register {
   ]);
   readonly confirmPassword = new FormControl('', [Validators.required]);
 
-  // mensagens de erro
   errorMessage = signal('');
   emailErrorMessage = signal('');
   passwordErrorMessage = signal('');
@@ -52,7 +52,7 @@ export class Register {
 
   passwordMismatch = false;
 
-  constructor() {
+  constructor(private apiService: ApiService) {
     merge(this.email.statusChanges, this.email.valueChanges)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.updateEmailErrorMessage());
@@ -70,7 +70,6 @@ export class Register {
       .subscribe(() => this.checkPasswordMatch());
   }
 
-  /** getter para saber se o form está inválido */
   get formInvalid(): boolean {
     return (
       this.name.invalid ||
@@ -130,7 +129,23 @@ export class Register {
     this.hideConfirm.set(!this.hideConfirm());
     event.stopPropagation();
   }
-  updateErrorMessage() {
-    throw new Error('Method not implemented.');
+
+  onRegister() {
+    this.apiService
+      .registerUser({
+        name: this.name.value,
+        email: this.email.value,
+        role: this.role.value,
+        password: this.password.value,
+      })
+      .subscribe({
+        next: (response) => {
+          let responseString = JSON.stringify(response);
+          localStorage.setItem('user', responseString);
+        },
+        error: (error) => {
+          this.errorMessage.set('Registration failed');
+        },
+      });
   }
 }

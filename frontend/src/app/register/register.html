@@ -14,10 +14,10 @@
 
         <mat-form-field class="email">
             <mat-label>Enter your email</mat-label>
-            <input matInput placeholder="dentistry@example.com" [formControl]="email" (blur)="updateErrorMessage()"
+            <input matInput placeholder="dentistry@example.com" [formControl]="email" (blur)="updateEmailErrorMessage()"
                 required />
             @if (email.invalid) {
-            <mat-error>{{errorMessage()}}</mat-error>
+            <mat-error>{{emailErrorMessage()}}</mat-error>
             }
         </mat-form-field>
 
@@ -56,7 +56,9 @@
         </mat-form-field>
 
 
-        <button matButton="tonal" [disabled]="formInvalid">Register</button>
+        <button mat-raised-button color="primary" [disabled]="formInvalid" (click)="onRegister()">
+            Register
+        </button>
 
         <a href="/" class="login-link">Already have an account?</a>
     </div>
