@@ -1,8 +1,8 @@
 import { RouterModule, Routes } from '@angular/router';
 import { Login } from './login/login';
-import { Cadastro } from './cadastro/cadastro';
+import { Register } from './register/register';
 
 export const routes: Routes = [
   { path: '', component: Login },
-  { path: 'cadastro', component: Cadastro }
+  { path: 'register', component: Register }
 ];

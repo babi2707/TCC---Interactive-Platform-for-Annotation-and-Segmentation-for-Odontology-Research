@@ -37,11 +37,17 @@
   display: none;
 }
 
+.buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
 button:hover {
   color: #1565c0;
 }
 
-.cadastro {
+.cadastro, .forgot-password {
   margin-top: 1rem;
   text-align: center;
   color: #1976d2;
@@ -49,6 +55,6 @@ button:hover {
   font-weight: 500;
 }
 
-.cadastro:hover {
+.cadastro:hover, .forgot-password:hover {
   color: #5491ec;
 }

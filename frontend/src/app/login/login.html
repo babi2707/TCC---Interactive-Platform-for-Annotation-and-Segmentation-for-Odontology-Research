@@ -5,8 +5,8 @@
         </div>
 
         <mat-form-field class="email">
-            <mat-label>Insira seu email</mat-label>
-            <input matInput placeholder="odonto@exemplo.com" [formControl]="email" (blur)="updateErrorMessage()"
+            <mat-label>Enter your email</mat-label>
+            <input matInput placeholder="dentistry@exemple.com" [formControl]="email" (blur)="updateErrorMessage()"
                 required />
             @if (email.invalid) {
             <mat-error>{{errorMessage()}}</mat-error>
@@ -24,7 +24,10 @@
 
         <button matButton="tonal" >Login</button>
 
-        <a href="/cadastro" class="cadastro">Cadastrar</a>
+        <div class="buttons">
+            <a href="/register" class="cadastro">Register</a>
+            <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
     </div>
 
 </div>

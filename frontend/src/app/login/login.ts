@@ -40,9 +40,9 @@ export class Login {
 
   updateErrorMessage() {
     if (this.email.hasError('required')) {
-      this.errorMessage.set('Você deve inserir um email válido');
+      this.errorMessage.set('You must insert a valid email');
     } else if (this.email.hasError('email')) {
-      this.errorMessage.set('Email inválido');
+      this.errorMessage.set('Invalid email');
     } else {
       this.errorMessage.set('');
     }
