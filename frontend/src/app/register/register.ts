@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { merge } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../api.services';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
@@ -52,7 +53,7 @@ export class Register {
 
   passwordMismatch = false;
 
-  constructor(private apiService: ApiService) {
+  constructor(private apiService: ApiService, private router: Router) {
     merge(this.email.statusChanges, this.email.valueChanges)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.updateEmailErrorMessage());
@@ -140,8 +141,8 @@ export class Register {
       })
       .subscribe({
         next: (response) => {
-          let responseString = JSON.stringify(response);
-          localStorage.setItem('user', responseString);
+          alert('Registration successful! Please log in.');
+          this.router.navigate(['/']);
         },
         error: (error) => {
           this.errorMessage.set('Registration failed');

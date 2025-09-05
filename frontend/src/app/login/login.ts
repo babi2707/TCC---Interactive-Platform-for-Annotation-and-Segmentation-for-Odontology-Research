@@ -12,6 +12,7 @@ import { merge } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../api.services';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -38,7 +39,7 @@ export class Login {
   successMessage = signal('');
   hide = signal(true);
 
-  constructor(private apiService: ApiService) {
+  constructor(private apiService: ApiService, private router: Router) {
     merge(this.email.statusChanges, this.email.valueChanges)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.updateErrorMessage());
@@ -67,8 +68,7 @@ export class Login {
       })
       .subscribe({
         next: (response) => {
-          alert(response);
-          this.successMessage.set(response);
+          this.router.navigate(['/homepage']);
         },
         error: (error) => {
           this.errorMessage.set('Login failed');
