@@ -15,19 +15,24 @@
 
         <mat-form-field class="password">
             <mat-label>Enter your password</mat-label>
-            <input matInput [type]="hide() ? 'password' : 'text'" />
+            <input matInput [type]="hide() ? 'password' : 'text'" [formControl]="password" (blur)="updateErrorMessage()"
+                required />
             <button matIconButton matSuffix (click)="clickEvent($event)" [attr.aria-label]="'Hide password'"
                 [attr.aria-pressed]="hide()">
                 <mat-icon>{{hide() ? 'visibility_off' : 'visibility'}}</mat-icon>
             </button>
         </mat-form-field>
 
-        <button matButton="tonal" >Login</button>
+        <button mat-raised-button color="primary" (click)="onLogin()">Login</button>
 
         <div class="buttons">
             <a href="/register" class="cadastro">Register</a>
             <a href="#" class="forgot-password">Forgot password?</a>
         </div>
+
+        @if (successMessage()) {
+        <p style="color: green">{{ successMessage() }}</p>
+        }
     </div>
 
 </div>

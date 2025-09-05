@@ -9,8 +9,9 @@ import {
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { merge } from 'rxjs';
-import {MatButtonModule} from '@angular/material/button';
-import {MatIconModule} from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { ApiService } from '../api.services';
 
 @Component({
   selector: 'app-login',
@@ -20,7 +21,7 @@ import {MatIconModule} from '@angular/material/icon';
     FormsModule,
     ReactiveFormsModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
@@ -28,11 +29,16 @@ import {MatIconModule} from '@angular/material/icon';
 })
 export class Login {
   readonly email = new FormControl('', [Validators.required, Validators.email]);
+  readonly password = new FormControl('', [
+    Validators.required,
+    Validators.minLength(7),
+  ]);
 
   errorMessage = signal('');
+  successMessage = signal('');
   hide = signal(true);
 
-  constructor() {
+  constructor(private apiService: ApiService) {
     merge(this.email.statusChanges, this.email.valueChanges)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.updateErrorMessage());
@@ -51,5 +57,22 @@ export class Login {
   clickEvent(event: MouseEvent) {
     this.hide.set(!this.hide());
     event.stopPropagation();
+  }
+
+  onLogin() {
+    this.apiService
+      .loginUser({
+        email: this.email.value,
+        password: this.password.value,
+      })
+      .subscribe({
+        next: (response) => {
+          alert(response);
+          this.successMessage.set(response);
+        },
+        error: (error) => {
+          this.errorMessage.set('Login failed');
+        },
+      });
   }
 }

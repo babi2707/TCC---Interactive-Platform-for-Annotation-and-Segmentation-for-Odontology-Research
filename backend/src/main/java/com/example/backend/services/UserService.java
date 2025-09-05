@@ -28,12 +28,19 @@ public class UserService implements IUserService {
 
     @Override
     public String login(String email, String passwordHash) {
-        Optional<User> user = userRepository.findByEmail(email);
+        Optional<User> userOpt = userRepository.findByEmail(email);
 
-        if(user.isEmpty()) {
-            throw new RuntimeException("Credentials not found.");
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("Email not found.");
         }
 
-        return "Login realizado com sucesso para usuário: " + user.get().getEmail();
+        User user = userOpt.get();
+
+        if (!user.getPasswordHash().equals(passwordHash)) {
+            throw new RuntimeException("Invalid password.");
+        }
+
+        return "Login realizado com sucesso para usuário: " + user.getEmail();
     }
+
 }
