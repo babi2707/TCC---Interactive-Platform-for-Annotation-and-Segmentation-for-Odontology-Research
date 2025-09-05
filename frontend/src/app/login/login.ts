@@ -36,7 +36,6 @@ export class Login {
   ]);
 
   errorMessage = signal('');
-  successMessage = signal('');
   hide = signal(true);
 
   constructor(private apiService: ApiService, private router: Router) {
@@ -68,6 +67,7 @@ export class Login {
       })
       .subscribe({
         next: (response) => {
+          localStorage.setItem('authToken', response.token);
           this.router.navigate(['/homepage']);
         },
         error: (error) => {

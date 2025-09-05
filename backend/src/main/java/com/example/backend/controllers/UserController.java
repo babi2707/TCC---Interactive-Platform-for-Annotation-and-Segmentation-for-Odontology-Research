@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor
@@ -24,8 +26,8 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody FindUserByEmailDTO userDTO) {
-        String result = findUserByEmail.execute(userDTO.getEmail(), userDTO.getPassword());
-        return ResponseEntity.ok(result);
+    public ResponseEntity<Map<String, String>> login(@RequestBody FindUserByEmailDTO userDTO) {
+        String token = findUserByEmail.execute(userDTO.getEmail(), userDTO.getPassword());
+        return ResponseEntity.ok(Map.of("token", token));
     }
 }

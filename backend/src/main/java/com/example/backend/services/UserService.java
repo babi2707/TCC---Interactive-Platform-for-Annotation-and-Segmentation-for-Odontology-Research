@@ -3,20 +3,19 @@ package com.example.backend.services;
 import com.example.backend.entities.User;
 import com.example.backend.interfaces.IUserService;
 import com.example.backend.repositories.UserRepository;
+import com.example.backend.utils.JwtUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class UserService implements IUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    protected UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    private final JwtUtil jwtUtil;
 
     @Override
     public User register(String name, String email, String password, String role) {
@@ -45,7 +44,7 @@ public class UserService implements IUserService {
             throw new RuntimeException("Invalid password.");
         }
 
-        return "Login realizado com sucesso para usuário: " + user.getEmail();
+        return jwtUtil.generateToken(user.getEmail(), user.getRole());
     }
 
 }
