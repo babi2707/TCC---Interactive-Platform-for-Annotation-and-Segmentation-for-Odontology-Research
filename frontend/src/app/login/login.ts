@@ -89,7 +89,7 @@ export class Login {
       .subscribe({
         next: (response) => {
           localStorage.setItem('authToken', response.token);
-          this.router.navigate(['/homepage']);
+          this.router.navigate(['/database']);
         },
         error: (error) => {
           const backendMessage = error.error?.message;

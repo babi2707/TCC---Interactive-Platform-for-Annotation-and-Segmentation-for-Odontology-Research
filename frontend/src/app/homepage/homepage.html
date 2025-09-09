@@ -1,28 +1,5 @@
 <div class="homepage">
-    <button class="user-button" (click)="toggleUserDropdown()">
-        <span class="material-symbols-outlined">
-            account_circle
-        </span>
-    </button>
-
-    <div class="user-dropdown" *ngIf="showUserDropdown" appClickOutside (clickOutside)="closeDropdown()">
-        <button class="dropdown-item">
-            <span class="material-symbols-outlined">person</span>
-            Profile
-        </button>
-        <mat-divider></mat-divider>
-        <button class="dropdown-item">
-            <span class="material-symbols-outlined">
-                history
-            </span>
-            History
-        </button>
-        <mat-divider></mat-divider>
-        <button class="dropdown-item" (click)="onLogout()">
-            <span class="material-symbols-outlined">logout</span>
-            Logout
-        </button>
-    </div>
+    <app-profile-symbol></app-profile-symbol>
 
     <p>homepage works!</p>
 </div>
