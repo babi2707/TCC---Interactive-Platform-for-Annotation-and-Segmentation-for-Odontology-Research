@@ -1,5 +1,12 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  signal,
+  Inject,
+  PLATFORM_ID,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
 import {
   FormControl,
   FormsModule,
@@ -23,6 +30,7 @@ import { Router } from '@angular/router';
     ReactiveFormsModule,
     MatButtonModule,
     MatIconModule,
+    CommonModule,
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',
@@ -36,12 +44,23 @@ export class Login {
   ]);
 
   errorMessage = signal('');
+  errorLoginMessage = signal('');
   hide = signal(true);
 
-  constructor(private apiService: ApiService, private router: Router) {
+  constructor(
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private apiService: ApiService,
+    private router: Router
+  ) {
     merge(this.email.statusChanges, this.email.valueChanges)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.updateErrorMessage());
+  }
+
+  ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.clear();
+    }
   }
 
   updateErrorMessage() {
@@ -71,7 +90,8 @@ export class Login {
           this.router.navigate(['/homepage']);
         },
         error: (error) => {
-          this.errorMessage.set('Login failed');
+          const backendMessage = error.error?.message;
+          this.errorLoginMessage.set(backendMessage || 'Invalid email or password');
         },
       });
   }

@@ -26,8 +26,8 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody FindUserByEmailDTO userDTO) {
-        String token = findUserByEmail.execute(userDTO.getEmail(), userDTO.getPassword());
-        return ResponseEntity.ok(Map.of("token", token));
+    public ResponseEntity<?> login(@RequestBody FindUserByEmailDTO userDTO) {
+        ResponseEntity<?> response = findUserByEmail.execute(userDTO.getEmail(), userDTO.getPassword());
+        return response;
     }
 }

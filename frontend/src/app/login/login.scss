@@ -40,6 +40,12 @@
   display: none;
 }
 
+.error {
+  color: red;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
 .buttons {
   display: flex;
   flex-direction: row;

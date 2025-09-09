@@ -23,6 +23,10 @@
             </button>
         </mat-form-field>
 
+        <div class="error" *ngIf="errorLoginMessage()">
+            {{ errorLoginMessage() }}
+        </div>
+
         <button mat-raised-button color="primary" (click)="onLogin()">Login</button>
 
         <div class="buttons">

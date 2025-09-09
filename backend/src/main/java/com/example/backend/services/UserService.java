@@ -5,6 +5,8 @@ import com.example.backend.interfaces.IUserService;
 import com.example.backend.repositories.UserRepository;
 import com.example.backend.utils.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,20 +33,18 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public String login(String email, String passwordHash) {
+    public ResponseEntity<?> login(String email, String password) {
         Optional<User> userOpt = userRepository.findByEmail(email);
 
-        if (userOpt.isEmpty()) {
-            throw new RuntimeException("Email not found.");
+        if (userOpt.isEmpty() || !passwordEncoder.matches(password, userOpt.get().getPasswordHash())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponseDTO("Invalid email or password"));
         }
 
         User user = userOpt.get();
 
-        if (!passwordEncoder.matches(passwordHash, user.getPasswordHash())) {
-            throw new RuntimeException("Invalid password.");
-        }
-
-        return jwtUtil.generateToken(user.getEmail(), user.getRole());
+        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
+        return ResponseEntity.ok(new LoginResponseDTO(token));
     }
 
 }

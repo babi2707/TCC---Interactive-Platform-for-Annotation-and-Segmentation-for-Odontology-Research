@@ -2,6 +2,7 @@ package com.example.backend.usecases.finduserbyemail;
 
 import com.example.backend.interfaces.IUserService;
 import lombok.AllArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class FindUserByEmail {
     private final IUserService userService;
 
-    public String execute(String email, String password) {
+    public ResponseEntity<?> execute(String email, String password) {
         return userService.login(email, password);
     }
 }

@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MatDividerModule } from '@angular/material/divider';
 import { ClickOutsideDirective } from '../app.clickoutside';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-homepage',
@@ -11,6 +12,7 @@ import { ClickOutsideDirective } from '../app.clickoutside';
   styleUrls: ['./homepage.scss'],
 })
 export class Homepage {
+  constructor(@Inject(PLATFORM_ID) private platformId: Object, private router: Router) {}
   showUserDropdown = false;
 
   toggleUserDropdown() {
@@ -19,5 +21,12 @@ export class Homepage {
 
   closeDropdown() {
     this.showUserDropdown = false;
+  }
+
+  onLogout() {
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.clear();
+    }
+    this.router.navigate(['/']);
   }
 }
