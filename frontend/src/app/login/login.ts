@@ -19,10 +19,11 @@ import { merge } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ApiService } from '../api.services';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-login',
+  standalone: true,
   imports: [
     MatFormFieldModule,
     MatInputModule,
@@ -31,6 +32,7 @@ import { Router } from '@angular/router';
     MatButtonModule,
     MatIconModule,
     CommonModule,
+    RouterModule,
   ],
   templateUrl: './login.html',
   styleUrl: './login.scss',

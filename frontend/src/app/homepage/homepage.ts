@@ -2,12 +2,12 @@ import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MatDividerModule } from '@angular/material/divider';
 import { ClickOutsideDirective } from '../app.clickoutside';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule, MatDividerModule, ClickOutsideDirective],
+  imports: [CommonModule, MatDividerModule, ClickOutsideDirective, RouterModule],
   templateUrl: './homepage.html',
   styleUrls: ['./homepage.scss'],
 })
