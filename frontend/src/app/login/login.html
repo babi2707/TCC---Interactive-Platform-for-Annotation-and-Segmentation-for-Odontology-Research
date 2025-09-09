@@ -4,35 +4,37 @@
             <h2>Login</h2>
         </div>
 
-        <mat-form-field class="email">
-            <mat-label>Enter your email</mat-label>
-            <input matInput placeholder="dentistry@exemple.com" [formControl]="email" (blur)="updateErrorMessage()"
-                required />
-            @if (email.invalid) {
-            <mat-error>{{errorMessage()}}</mat-error>
-            }
-        </mat-form-field>
+        <form class="login-form" #form="ngForm" (ngSubmit)="onLogin()">
+            <mat-form-field class="email">
+                <mat-label>Enter your email</mat-label>
+                <input matInput placeholder="dentistry@exemple.com" [formControl]="email" (blur)="updateErrorMessage()"
+                    required />
+                @if (email.invalid) {
+                <mat-error>{{errorMessage()}}</mat-error>
+                }
+            </mat-form-field>
 
-        <mat-form-field class="password">
-            <mat-label>Enter your password</mat-label>
-            <input matInput [type]="hide() ? 'password' : 'text'" [formControl]="password" (blur)="updateErrorMessage()"
-                required />
-            <button matIconButton matSuffix (click)="clickEvent($event)" [attr.aria-label]="'Hide password'"
-                [attr.aria-pressed]="hide()">
-                <mat-icon>{{hide() ? 'visibility_off' : 'visibility'}}</mat-icon>
-            </button>
-        </mat-form-field>
+            <mat-form-field class="password">
+                <mat-label>Enter your password</mat-label>
+                <input matInput [type]="hide() ? 'password' : 'text'" [formControl]="password"
+                    (blur)="updateErrorMessage()" required />
+                <button matIconButton matSuffix (click)="clickEvent($event)" [attr.aria-label]="'Hide password'"
+                    [attr.aria-pressed]="hide()">
+                    <mat-icon>{{hide() ? 'visibility_off' : 'visibility'}}</mat-icon>
+                </button>
+            </mat-form-field>
 
-        <div class="error" *ngIf="errorLoginMessage()">
-            {{ errorLoginMessage() }}
-        </div>
+            <div class="error" *ngIf="errorLoginMessage()">
+                {{ errorLoginMessage() }}
+            </div>
 
-        <button mat-raised-button color="primary" (click)="onLogin()">Login</button>
+            <button mat-raised-button color="primary" type="submit">Login</button>
 
-        <div class="buttons">
-            <a href="/register" class="cadastro">Register</a>
-            <a href="#" class="forgot-password">Forgot password?</a>
-        </div>
+            <div class="buttons">
+                <a href="/register" class="cadastro">Register</a>
+                <a href="#" class="forgot-password">Forgot password?</a>
+            </div>
+        </form>
     </div>
 
 </div>
