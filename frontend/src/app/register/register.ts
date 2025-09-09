@@ -5,6 +5,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -14,6 +15,7 @@ import { merge } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../api.services';
 import { Router } from '@angular/router';
+import e from 'express';
 
 @Component({
   selector: 'app-register',
@@ -24,6 +26,7 @@ import { Router } from '@angular/router';
     FormsModule,
     ReactiveFormsModule,
     MatButtonModule,
+    CommonModule,
     MatIconModule,
   ],
   templateUrl: './register.html',
@@ -145,7 +148,7 @@ export class Register {
           this.router.navigate(['/']);
         },
         error: (error) => {
-          this.errorMessage.set('Registration failed');
+          this.errorMessage.set(error.error?.message || 'Registration failed. Please try again.');
         },
       });
   }
