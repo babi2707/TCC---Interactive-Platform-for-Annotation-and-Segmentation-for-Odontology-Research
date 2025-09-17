@@ -107,7 +107,7 @@ export class RegisterDatabase {
     });
 
     this.apiService.registerDatabase(formData).subscribe({
-      next: () => this.router.navigate(['/homepage']),
+      next: () => this.router.navigate(['/database']),
       error: (err) => {
         console.error('Error registering database:', err);
         this.errorMessage.set('Failed to register database. Please try again.');

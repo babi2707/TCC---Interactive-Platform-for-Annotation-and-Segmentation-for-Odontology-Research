@@ -21,4 +21,8 @@ export class ApiService {
   registerDatabase(databaseData: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/database/register`, databaseData);
   }
+
+  findAllDatabases(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/database/findAll`);
+  }
 }

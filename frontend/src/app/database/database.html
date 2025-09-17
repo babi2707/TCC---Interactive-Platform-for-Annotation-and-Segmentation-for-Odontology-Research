@@ -9,15 +9,27 @@
             <span class="title-text">Database List</span>
         </div>
 
-        <div class="new-database-container" (click)="navigateToDatabaseRegister()">
-            <div class="row-folder">
-                <span class="material-symbols-outlined" id="add-database-icon">
-                    create_new_folder
-                </span>
+        <div class="databases-grid-container">
+            <div *ngFor="let database of databases" class="database-item">
+                <div class="row-folder">
+                    <span class="material-symbols-outlined database-icon">
+                        folder
+                    </span>
+                </div>
+                <div class="row-text">
+                    <span class="database-text">{{ database.name }}</span>
+                </div>
             </div>
 
-            <div class="row-text">
-                <span class="new-database-text">New Database</span>
+            <div class="database-item new-database-item" (click)="navigateToDatabaseRegister()">
+                <div class="row-folder">
+                    <span class="material-symbols-outlined add-database-icon">
+                        create_new_folder
+                    </span>
+                </div>
+                <div class="row-text">
+                    <span class="database-text">New Database</span>
+                </div>
             </div>
         </div>
     </div>
