@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface IDatabaseService {
     Database createDatabase(String name, Long userId, List<MultipartFile> imageIds);
+    List<Database> findAllDatabases();
 }

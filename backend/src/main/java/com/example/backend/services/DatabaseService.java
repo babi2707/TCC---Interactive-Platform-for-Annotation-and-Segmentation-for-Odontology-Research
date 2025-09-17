@@ -71,4 +71,9 @@ public class DatabaseService implements IDatabaseService {
 
         return database;
     }
+
+    @Override
+    public List<Database> findAllDatabases() {
+        return databaseRepository.findAll();
+    }
 }
