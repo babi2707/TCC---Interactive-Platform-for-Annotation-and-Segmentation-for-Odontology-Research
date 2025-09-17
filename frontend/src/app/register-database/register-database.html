@@ -1,1 +1,27 @@
-<p>register-database works!</p>
+<div class="register-database">
+    <div class="register-database-container">
+        <div class="title">
+            <h2>New Database</h2>
+        </div>
+
+        <form class="register-database-form" #form="ngForm" (ngSubmit)="onRegisterNewDatabase()">
+            <mat-form-field class="name">
+                <mat-label>Enter the database name</mat-label>
+                <input matInput placeholder="database name" [formControl]="name" required />
+                <mat-error *ngIf="errorMessage()">
+                    {{ errorMessage() }}
+                </mat-error>
+            </mat-form-field>
+
+            <button mat-icon-button class="add-files-button" (click)="clickEvent($event)">
+                <span class="material-symbols-outlined">
+                    folder
+                </span>
+                <span class="add-files-text">Add files</span>
+            </button>
+
+            <button mat-raised-button color="primary" type="submit">Add database</button>
+        </form>
+    </div>
+
+</div>
