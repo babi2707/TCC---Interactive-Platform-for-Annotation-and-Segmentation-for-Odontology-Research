@@ -4,6 +4,7 @@ import com.example.backend.entities.Database;
 import com.example.backend.interfaces.IDatabaseService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -12,7 +13,7 @@ import java.util.List;
 public class RegisterDatabase {
     private final IDatabaseService databaseService;
 
-    public Database execute(String name, Long userId, List<Long> imageIds) {
+    public Database execute(String name, Long userId, List<MultipartFile> imageIds) {
         return databaseService.createDatabase(name, userId, imageIds);
     }
 }

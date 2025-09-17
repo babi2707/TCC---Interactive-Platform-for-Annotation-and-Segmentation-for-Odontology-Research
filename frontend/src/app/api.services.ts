@@ -17,4 +17,8 @@ export class ApiService {
   loginUser(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/user/login`, credentials);
   }
+
+  registerDatabase(databaseData: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/database/register`, databaseData);
+  }
 }

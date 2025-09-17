@@ -13,14 +13,21 @@
                 </mat-error>
             </mat-form-field>
 
-            <button mat-icon-button class="add-files-button" (click)="clickEvent($event)">
+            <button mat-icon-button class="add-files-button" (click)="openFileSelector($event)">
                 <span class="material-symbols-outlined">
                     folder
                 </span>
                 <span class="add-files-text">Add files</span>
             </button>
 
-            <button mat-raised-button color="primary" type="submit">Add database</button>
+            <input type="file" #fileInput (change)="onFilesSelected($event)" multiple accept="image/*"
+                style="display: none" />
+
+            <div *ngIf="selectedFiles.length > 0" class="file-list">
+                <p *ngFor="let file of selectedFiles">{{ file.name }}</p>
+            </div>
+
+            <button class="add-database-button" mat-raised-button color="primary" type="submit">Add database</button>
         </form>
     </div>
 

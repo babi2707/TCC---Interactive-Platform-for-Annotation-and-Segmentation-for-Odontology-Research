@@ -43,7 +43,7 @@ public class UserService implements IUserService {
 
         User user = userOpt.get();
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
         return ResponseEntity.ok(new LoginResponseDTO(token));
     }
 
