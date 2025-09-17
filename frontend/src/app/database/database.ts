@@ -19,7 +19,6 @@ export class Database {
     this.apiService.findAllDatabases().subscribe({
       next: (data) => {
         this.databases = data;
-        console.log('Databases fetched successfully:', data);
       },
       error: (err) => {
         console.error('Error fetching databases:', err);

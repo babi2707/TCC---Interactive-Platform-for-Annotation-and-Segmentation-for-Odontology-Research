@@ -86,6 +86,14 @@
     word-break: break-word;
     max-width: 120px;
   }
+
+  .add-database-text {
+    font-size: 20px;
+    font-weight: 600;
+    word-break: break-word;
+    max-width: 120px;
+    color: #2196f3;
+  }
 }
 
 @media (max-width: 768px) {
@@ -105,7 +113,7 @@
     font-size: 50px;
   }
 
-  .row-text .database-text {
+  .row-text .database-text, .row-text .add-database-text {
     font-size: 14px;
   }
 }
