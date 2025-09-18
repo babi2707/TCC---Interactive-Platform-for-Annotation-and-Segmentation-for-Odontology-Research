@@ -20,7 +20,7 @@ export class ProfileSymbol {
     this.showUserDropdown = !this.showUserDropdown;
   }
 
-  closeDropdown() {
+  closeUserDropdown() {
     this.showUserDropdown = false;
   }
 

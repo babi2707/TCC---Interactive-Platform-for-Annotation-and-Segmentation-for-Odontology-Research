@@ -36,12 +36,12 @@
 }
 
 .database-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
   border-radius: 12px;
-  background-color: #f8f9fa;
   transition: all 0.3s ease;
   cursor: pointer;
   min-height: 150px;
@@ -79,6 +79,7 @@
   display: flex;
   justify-content: center;
   text-align: center;
+  align-items: center;
 
   .database-text {
     font-size: 20px;
@@ -93,6 +94,48 @@
     word-break: break-word;
     max-width: 120px;
     color: #2196f3;
+  }
+
+  #more-icon {
+    font-size: 30px;
+    cursor: pointer;
+
+    &:hover {
+      color: #1976d2;
+    }
+  }
+}
+
+.database-dropdown {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+  z-index: 1000;
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+
+    .material-symbols-outlined {
+      font-size: 20px;
+    }
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
   }
 }
 
@@ -113,7 +156,8 @@
     font-size: 50px;
   }
 
-  .row-text .database-text, .row-text .add-database-text {
+  .row-text .database-text,
+  .row-text .add-database-text {
     font-size: 14px;
   }
 }

@@ -10,7 +10,8 @@
         </div>
 
         <div class="databases-grid-container">
-            <div *ngFor="let database of databases" class="database-item">
+            <div *ngFor="let database of databases" class="database-item"
+                (mouseleave)="closeDatabaseDropdown(database.id)">
                 <div class="row-folder">
                     <span class="material-symbols-outlined database-icon">
                         folder
@@ -18,6 +19,30 @@
                 </div>
                 <div class="row-text">
                     <span class="database-text">{{ database.name }}</span>
+                    <span class="material-symbols-outlined" id="more-icon"
+                        (click)="toggleDatabaseDropdown(database.id)">
+                        more_vert
+                    </span>
+                </div>
+
+                <div class="database-dropdown" *ngIf="openDropdowns[database.id]" appClickOutside
+                    (clickOutside)="closeDatabaseDropdown(database.id)">
+                    <button class="dropdown-item">
+                        <span class="material-symbols-outlined">edit</span>
+                        Edit Database
+                    </button>
+                    <mat-divider></mat-divider>
+                    <button class="dropdown-item">
+                        <span class="material-symbols-outlined">
+                            download
+                        </span>
+                        Download Database
+                    </button>
+                    <mat-divider></mat-divider>
+                    <button class="dropdown-item">
+                        <span class="material-symbols-outlined">delete</span>
+                        Delete Database
+                    </button>
                 </div>
             </div>
 
