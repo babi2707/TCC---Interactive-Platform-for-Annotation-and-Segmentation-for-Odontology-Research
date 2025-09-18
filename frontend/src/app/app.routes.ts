@@ -12,3 +12,5 @@ export const routes: Routes = [
   { path: 'database', component: Database },
   { path: 'register-database', component: RegisterDatabase },
 ];
+
+RouterModule.forRoot(routes, { onSameUrlNavigation: 'reload' });

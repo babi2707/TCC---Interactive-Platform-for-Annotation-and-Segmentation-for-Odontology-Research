@@ -1,8 +1,13 @@
-import { Component } from '@angular/core';
+import {
+  Component,
+  PLATFORM_ID,
+  Inject,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { ProfileSymbol } from '../profile-symbol/profile-symbol';
 import { Router, RouterModule } from '@angular/router';
 import { ApiService } from '../api.services';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { MatDividerModule } from '@angular/material/divider';
 import { ClickOutsideDirective } from '../app.clickoutside';
 
@@ -22,16 +27,26 @@ export class Database {
   databases: any[] = [];
   openDropdowns: Record<string, boolean> = {};
 
-  constructor(private apiService: ApiService, private router: Router) {}
+  constructor(
+    private apiService: ApiService,
+    private router: Router,
+    @Inject(PLATFORM_ID) private platformId: Object,
+    private cd: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.loadDatabases();
+    }
+  }
+
+  loadDatabases() {
     this.apiService.findAllDatabases().subscribe({
       next: (data) => {
         this.databases = data;
+        this.cd.markForCheck();
       },
-      error: (err) => {
-        console.error('Error fetching databases:', err);
-      },
+      error: (err) => console.error('Error fetching databases:', err),
     });
   }
 
