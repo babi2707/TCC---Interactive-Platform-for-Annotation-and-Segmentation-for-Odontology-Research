@@ -19,7 +19,7 @@ import java.util.List;
 public class ImageController {
     private final FindAllImagesByDatabase findAllImagesByDatabase;
 
-    @GetMapping(value = "/findAll")
+    @GetMapping(value = "/findAllByDatabase")
     public ResponseEntity<List<Image>> getAllImagesByDatabase(@RequestParam Long databaseId) {
         List<Image> images = findAllImagesByDatabase.execute(databaseId);
         return ResponseEntity.ok(images);
