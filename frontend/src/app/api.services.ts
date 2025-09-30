@@ -25,4 +25,8 @@ export class ApiService {
   findAllDatabases(): Observable<any> {
     return this.http.get(`${this.apiUrl}/database/findAll`);
   }
+
+  findAllImagesByDatabase(databaseId: any): Observable<any> {
+    return this.http.get(`${this.apiUrl}/image/findAllByDatabase`, { params: { databaseId } });
+  }
 }

@@ -30,6 +30,7 @@ public class SecurityConfig {
                         .requestMatchers("/user/**").permitAll()
                         .requestMatchers("/database/**").permitAll()
                         .requestMatchers("/image/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
 
                         .anyRequest().authenticated()
                 );

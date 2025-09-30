@@ -54,6 +54,13 @@ export class Database {
     this.router.navigate(['/register-database']);
   }
 
+  navigateToDatabaseImages(databaseId: number) {
+    localStorage.setItem('selectedDatabaseId', String(databaseId));
+    this.router.navigate(['/images', databaseId]).then(() => {
+      window.location.reload();
+    });
+  }
+
   toggleDatabaseDropdown(key: string) {
     this.openDropdowns[key] = !this.openDropdowns[key];
   }

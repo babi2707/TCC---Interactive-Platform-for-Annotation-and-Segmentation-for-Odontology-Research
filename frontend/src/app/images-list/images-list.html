@@ -1,0 +1,22 @@
+<div class="image-container">
+    <h2>Images for Database {{ databaseId }}</h2>
+
+    <div *ngIf="isLoading">
+        <p>Loading images...</p>
+    </div>
+
+    <div class="button-back">
+        <a href="/database" class="login-link">Return to Databases List</a>
+    </div>
+
+    <div *ngIf="!isLoading && images.length === 0">
+        <p>No images found for this database.</p>
+    </div>
+
+    <div *ngIf="!isLoading && images.length > 0" class="images-grid">
+        <div *ngFor="let img of images" class="image-item">
+            <img class="preview-image" [src]="getImageUrl(img.file_path)" alt="Image {{ img.id }}"
+                (error)="onImageError($event, img)" (load)="onImageLoad($event, img)" />
+        </div>
+    </div>
+</div>
