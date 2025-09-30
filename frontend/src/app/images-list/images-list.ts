@@ -12,6 +12,7 @@ import { CommonModule } from '@angular/common';
 export class ImagesList implements OnInit {
   images: any[] = [];
   databaseId!: number;
+  databaseName: string = '';
   isLoading = true;
 
   constructor(private route: ActivatedRoute, private apiService: ApiService) {}
@@ -21,6 +22,7 @@ export class ImagesList implements OnInit {
       const newId = params.get('databaseId');
       if (newId) {
         this.databaseId = Number(newId);
+        this.databaseName = localStorage.getItem('selectedDatabaseName') || '';
         this.loadImages();
       }
     });

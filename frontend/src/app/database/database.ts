@@ -54,8 +54,9 @@ export class Database {
     this.router.navigate(['/register-database']);
   }
 
-  navigateToDatabaseImages(databaseId: number) {
+  navigateToDatabaseImages(databaseId: number, databaseName: string) {
     localStorage.setItem('selectedDatabaseId', String(databaseId));
+    localStorage.setItem('selectedDatabaseName', databaseName);
     this.router.navigate(['/images', databaseId]).then(() => {
       window.location.reload();
     });

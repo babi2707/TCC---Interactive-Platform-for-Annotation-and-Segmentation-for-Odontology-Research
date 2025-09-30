@@ -11,7 +11,7 @@
 
         <div class="databases-grid-container">
             <div *ngFor="let database of databases" class="database-item"
-                (click)="navigateToDatabaseImages(database.id)" (mouseleave)="closeDatabaseDropdown(database.id)">
+                (click)="navigateToDatabaseImages(database.id, database.name)" (mouseleave)="closeDatabaseDropdown(database.id)">
                 <div class="row-folder">
                     <span class="material-symbols-outlined database-icon">
                         folder
