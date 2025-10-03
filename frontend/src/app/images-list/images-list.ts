@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../api.services';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 
 @Component({
   selector: 'app-images-list',
@@ -15,14 +15,23 @@ export class ImagesList implements OnInit {
   databaseName: string = '';
   isLoading = true;
 
-  constructor(private route: ActivatedRoute, private apiService: ApiService) {}
+  constructor(
+    private route: ActivatedRoute,
+    private apiService: ApiService,
+    @Inject(PLATFORM_ID) private platformId: Object
+  ) {}
 
   ngOnInit() {
     this.route.paramMap.subscribe((params) => {
       const newId = params.get('databaseId');
       if (newId) {
         this.databaseId = Number(newId);
-        this.databaseName = localStorage.getItem('selectedDatabaseName') || '';
+
+        if (isPlatformBrowser(this.platformId)) {
+          this.databaseName =
+            localStorage.getItem('selectedDatabaseName') || '';
+        }
+
         this.loadImages();
       }
     });

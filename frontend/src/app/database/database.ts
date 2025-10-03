@@ -55,14 +55,19 @@ export class Database {
   }
 
   navigateToDatabaseImages(databaseId: number, databaseName: string) {
-    localStorage.setItem('selectedDatabaseId', String(databaseId));
-    localStorage.setItem('selectedDatabaseName', databaseName);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem('selectedDatabaseId', String(databaseId));
+      localStorage.setItem('selectedDatabaseName', databaseName);
+    }
     this.router.navigate(['/images', databaseId]).then(() => {
-      window.location.reload();
+      if (isPlatformBrowser(this.platformId)) {
+        window.location.reload();
+      }
     });
   }
 
-  toggleDatabaseDropdown(key: string) {
+  toggleDatabaseDropdown(key: string, event: MouseEvent) {
+    event.stopPropagation();
     this.openDropdowns[key] = !this.openDropdowns[key];
   }
 
