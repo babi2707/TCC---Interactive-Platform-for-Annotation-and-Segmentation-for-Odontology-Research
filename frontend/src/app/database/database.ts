@@ -26,6 +26,8 @@ import { ClickOutsideDirective } from '../app.clickoutside';
 export class Database {
   databases: any[] = [];
   openDropdowns: Record<string, boolean> = {};
+  showConfirmModal = false;
+  databaseToDelete: number | null = null;
 
   constructor(
     private apiService: ApiService,
@@ -73,5 +75,29 @@ export class Database {
 
   closeDatabaseDropdown(key: string) {
     this.openDropdowns[key] = false;
+  }
+
+  openDeleteConfirmation(databaseId: number, event: MouseEvent) {
+    event.stopPropagation();
+    this.databaseToDelete = databaseId;
+    this.showConfirmModal = true;
+  }
+
+  cancelDelete() {
+    this.showConfirmModal = false;
+    this.databaseToDelete = null;
+  }
+
+  confirmDelete() {
+    if (this.databaseToDelete !== null) {
+      this.apiService.deleteDatabase(this.databaseToDelete).subscribe({
+        next: () => {
+          console.log('Database deletada com sucesso!');
+          this.loadDatabases();
+          this.showConfirmModal = false;
+        },
+        error: (err) => console.error('Erro ao deletar database:', err),
+      });
+    }
   }
 }

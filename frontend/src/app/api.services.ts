@@ -22,15 +22,23 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/database/register`, databaseData);
   }
 
+  deleteDatabase(databaseId: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/database/delete/${databaseId}`);
+  }
+
   findAllDatabases(): Observable<any> {
     return this.http.get(`${this.apiUrl}/database/findAll`);
   }
 
   findAllImagesByDatabase(databaseId: any): Observable<any> {
-    return this.http.get(`${this.apiUrl}/image/findAllByDatabase`, { params: { databaseId } });
+    return this.http.get(`${this.apiUrl}/image/findAllByDatabase`, {
+      params: { databaseId },
+    });
   }
 
   findImageById(imageId: any): Observable<any> {
-    return this.http.get(`${this.apiUrl}/image/findImageById`, { params: { imageId } });
+    return this.http.get(`${this.apiUrl}/image/findImageById`, {
+      params: { imageId },
+    });
   }
 }
