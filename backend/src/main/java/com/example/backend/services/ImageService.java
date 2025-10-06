@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,5 +17,10 @@ public class ImageService implements IImageService {
     @Override
     public List<Image> findAllImagesByDatabase(Long databaseId) {
         return imageRepository.findAllByDatabaseId(databaseId);
+    }
+
+    @Override
+    public Optional<Image> findImageById(Long imageId) {
+        return imageRepository.findById(imageId);
     }
 }

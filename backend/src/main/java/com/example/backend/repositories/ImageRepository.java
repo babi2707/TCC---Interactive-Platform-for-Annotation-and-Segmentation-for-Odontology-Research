@@ -7,7 +7,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface ImageRepository extends JpaRepository<Image, Long> {
-    List<Image> findByIdIn(List<MultipartFile> ids);
     List<Image> findAllByDatabaseId(Long databaseId);
 }
 
