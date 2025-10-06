@@ -1,6 +1,7 @@
 package com.example.backend.controllers;
 
 import com.example.backend.entities.Database;
+import com.example.backend.usecases.deletedatabase.DeleteDatabase;
 import com.example.backend.usecases.findalldatabases.FindAllDatabases;
 import com.example.backend.usecases.findalldatabases.FindAllDatabasesDTO;
 import com.example.backend.usecases.registerdatabase.RegisterDatabase;
@@ -17,6 +18,7 @@ import java.util.List;
 public class DatabaseController {
     private final RegisterDatabase registerDatabase;
     private final FindAllDatabases findAllDatabases;
+    private final DeleteDatabase deleteDatabase;
 
     @PostMapping(value = "/register", consumes = "multipart/form-data")
     public ResponseEntity<Database> registerDatabase(@ModelAttribute RegisterDatabaseDTO databaseDTO) {
@@ -28,5 +30,11 @@ public class DatabaseController {
     public ResponseEntity<List<FindAllDatabasesDTO>> getAllDatabases() {
         List<FindAllDatabasesDTO> databases = findAllDatabases.execute();
         return ResponseEntity.ok(databases);
+    }
+
+    @DeleteMapping(value = "/delete/{id}")
+    public ResponseEntity<Void> deleteDatabase(@PathVariable Long id){
+        deleteDatabase.execute(id);
+        return ResponseEntity.noContent().build();
     }
 }

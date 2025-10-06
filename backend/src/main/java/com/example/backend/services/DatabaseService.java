@@ -76,4 +76,13 @@ public class DatabaseService implements IDatabaseService {
     public List<Database> findAllDatabases() {
         return databaseRepository.findAll();
     }
+
+    @Override
+    public void deleteDatabase(Long databaseId) {
+        if(!databaseRepository.existsById(Math.toIntExact(databaseId))) {
+            throw new RuntimeException("Database not found with id: " + databaseId);
+        }
+
+        databaseRepository.deleteById(Math.toIntExact(databaseId));
+    }
 }
