@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../api.services';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 
@@ -17,6 +17,7 @@ export class ImagesList implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private apiService: ApiService,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {}
@@ -71,5 +72,9 @@ export class ImagesList implements OnInit {
 
   onImageLoad(event: any, img: any) {
     console.log('✅ Image loaded successfully:', img.file_path);
+  }
+
+  navigateToHomepage() {
+    this.router.navigate(['/homepage']);
   }
 }
