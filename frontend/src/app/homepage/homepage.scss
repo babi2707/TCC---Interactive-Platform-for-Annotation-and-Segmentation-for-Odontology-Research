@@ -59,6 +59,42 @@
   border-radius: 6px;
 }
 
+.color-picker-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.color-panel {
+  position: absolute;
+  top: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+}
+
+.color-picker {
+  position: absolute;
+  top: 140%;
+  left: 0;
+  z-index: 10;
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+}
+
+.color-indicator {
+  font-size: 22px;
+  cursor: default;
+}
+
+.grayscale {
+  filter: grayscale(100%);
+}
+
 /* --- GRUPO DE ELEMENTOS JUNTOS --- */
 .together {
   display: flex;
@@ -83,4 +119,34 @@
   height: auto;
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.brush-size-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brush-size-control input[type='range'] {
+  width: 120px;
+  cursor: pointer;
+}
+
+.brush-preview {
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  flex-shrink: 0;
+}
+
+.brush-cursor {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0.5;
+  transform: translate(-50%, -50%);
 }
