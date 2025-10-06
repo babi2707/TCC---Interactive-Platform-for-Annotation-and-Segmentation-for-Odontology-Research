@@ -9,7 +9,7 @@ import { ImagesList } from './images-list/images-list';
 export const routes: Routes = [
   { path: '', component: Login },
   { path: 'register', component: Register },
-  { path: 'homepage', component: Homepage },
+  { path: 'homepage/:imageId', component: Homepage },
   { path: 'database', component: Database },
   { path: 'register-database', component: RegisterDatabase },
   { path: 'images/:databaseId', component: ImagesList }

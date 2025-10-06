@@ -14,7 +14,7 @@
     </div>
 
     <div *ngIf="!isLoading && images.length > 0" class="images-grid">
-        <div *ngFor="let img of images" class="image-item" (click)="navigateToHomepage()">
+        <div *ngFor="let img of images" class="image-item" (click)="navigateToHomepage(img.id)">
             <img class="preview-image" [src]="getImageUrl(img.file_path)" alt="Image {{ img.id }}"
                 (error)="onImageError($event, img)" (load)="onImageLoad($event, img)" />
         </div>

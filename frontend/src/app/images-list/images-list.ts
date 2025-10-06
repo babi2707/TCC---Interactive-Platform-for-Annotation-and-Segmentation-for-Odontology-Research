@@ -74,7 +74,7 @@ export class ImagesList implements OnInit {
     console.log('✅ Image loaded successfully:', img.file_path);
   }
 
-  navigateToHomepage() {
-    this.router.navigate(['/homepage']);
+  navigateToHomepage(imageId: number) {
+    this.router.navigate(['/homepage', imageId]);
   }
 }

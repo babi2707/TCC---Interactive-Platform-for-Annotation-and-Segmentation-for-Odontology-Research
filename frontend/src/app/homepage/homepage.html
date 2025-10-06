@@ -1,5 +1,43 @@
 <div class="homepage">
-    <app-profile-symbol></app-profile-symbol>
+    <div class="toolbar">
+        <button class="logo">Logo</button>
+        <button class="segmentation">Automatic Segmentation</button>
+        <input type="range" min="1" max="50" />
+        <button><span class="material-symbols-outlined">
+                line_weight
+            </span></button>
+        <div class="together">
+            <span class="material-symbols-outlined">
+                circle
+            </span>
+            <button><span class="material-symbols-outlined">
+                    brush
+                </span></button>
+        </div>
+        <div class="together">
+            <button><span class="material-symbols-outlined">
+                    undo
+                </span></button>
+            <button><span class="material-symbols-outlined">
+                    redo
+                </span></button>
+        </div>
 
-    <p>homepage works!</p>
+        <div class="user-menu">
+            <app-profile-symbol></app-profile-symbol>
+        </div>
+    </div>
+
+    <div class="images-area">
+        <div class="image-block">
+            <h3>Imagem original</h3>
+            <img [src]="imageUrl" alt="Imagem original" />
+        </div>
+
+        <div class="image-block">
+            <h3>Imagem segmentada/anotada</h3>
+            <img [src]="segmentedImageUrl || imageUrl" alt="Imagem segmentada" />
+        </div>
+    </div>
+
 </div>
