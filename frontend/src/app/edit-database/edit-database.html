@@ -4,7 +4,7 @@
             <h2>Edit Dataset</h2>
         </div>
 
-        <form class="register-database-form" #form="ngForm" (ngSubmit)="onRegisterNewDatabase()">
+        <form class="register-database-form" #form="ngForm" (ngSubmit)="onEditDatabase()">
             <mat-form-field class="name">
                 <mat-label>Enter the database name</mat-label>
                 <input matInput placeholder="database name" [formControl]="name" required />
@@ -25,13 +25,16 @@
 
             <div *ngIf="selectedFiles.length > 0" class="file-list">
                 <div *ngFor="let file of selectedFiles; let i = index" class="file-item">
-                    <span [ngClass]="file.existing ? 'file-existing' : 'file-new'">
+                    <span [ngClass]="file.existing ? 'file-existing' : 'file-new'"
+                        [style.textDecoration]="file.markedForRemoval ? 'line-through' : 'none'"
+                        [style.opacity]="file.markedForRemoval ? 0.5 : 1">
                         {{ file.name }}
                     </span>
-                    <button mat-icon-button color="warn" (click)="removeFile(i)">
+                    <button mat-icon-button color="warn" type="button" (click)="markForRemoval(i)">
                         <span class="material-symbols-outlined">delete</span>
                     </button>
                 </div>
+
             </div>
 
 

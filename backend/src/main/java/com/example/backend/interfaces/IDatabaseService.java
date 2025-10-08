@@ -9,4 +9,5 @@ public interface IDatabaseService {
     Database createDatabase(String name, Long userId, List<MultipartFile> imageIds);
     List<Database> findAllDatabases();
     void deleteDatabase(Long databaseId);
+    Database editDatabase(Long id, String name, MultipartFile[] newFiles, Long[] removedFileIds);
 }

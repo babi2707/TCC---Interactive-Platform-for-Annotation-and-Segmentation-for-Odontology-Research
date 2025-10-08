@@ -22,6 +22,10 @@ export class ApiService {
     return this.http.post(`${this.apiUrl}/database/register`, databaseData);
   }
 
+  editDatabase(databaseData: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/database/edit`, databaseData);
+  }
+
   deleteDatabase(databaseId: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/database/delete/${databaseId}`);
   }

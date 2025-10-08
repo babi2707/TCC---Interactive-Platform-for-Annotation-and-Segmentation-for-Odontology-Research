@@ -60,9 +60,10 @@ export class ImagesList implements OnInit {
 
   getImageUrl(filePath: string): string {
     if (!filePath) return '';
-    return `http://localhost:8080${
-      filePath.startsWith('/') ? '' : '/'
-    }${filePath}`;
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    return `http://localhost:8080/${
+      normalizedPath.startsWith('/') ? normalizedPath.slice(1) : normalizedPath
+    }`;
   }
 
   onImageError(event: any, img: any) {

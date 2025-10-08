@@ -5,12 +5,7 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormControl,
-  FormsModule,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,6 +16,8 @@ import { Router, RouterModule } from '@angular/router';
 type CustomFile = File & {
   existing?: boolean;
   url?: string;
+  id?: number;
+  markedForRemoval?: boolean;
 };
 
 @Component({
@@ -41,6 +38,7 @@ type CustomFile = File & {
 })
 export class EditDatabase {
   database: any;
+  removedFilesIds: number[] = [];
   readonly name = new FormControl('');
   selectedFiles: CustomFile[] = [];
 
@@ -76,6 +74,7 @@ export class EditDatabase {
             name: cleanName,
             url: img.file_path,
             existing: true,
+            id: img.id,
           } as CustomFile;
         });
 
@@ -86,8 +85,16 @@ export class EditDatabase {
     });
   }
 
-  removeFile(index: number) {
-    this.selectedFiles.splice(index, 1);
+  markForRemoval(index: number) {
+    const file = this.selectedFiles[index];
+
+    if (file.existing) {
+      file.markedForRemoval = true;
+    } else {
+      this.selectedFiles.splice(index, 1);
+    }
+
+    this.cd.markForCheck();
   }
 
   updateErrorMessage() {
@@ -134,7 +141,7 @@ export class EditDatabase {
     }
   }
 
-  onRegisterNewDatabase() {
+  onEditDatabase() {
     if (this.name.invalid) {
       this.errorMessage.set('Please provide a valid name for the database.');
       return;
@@ -146,23 +153,30 @@ export class EditDatabase {
     if (token) {
       const payload = this.parseJwt(token);
       userId = payload?.userId;
-
-      console.log('User ID from token:', userId);
     }
 
     const formData = new FormData();
+    formData.append('id', this.database.id.toString());
     formData.append('name', this.name.value || '');
     formData.append('userId', userId);
 
-    this.selectedFiles.forEach((file) => {
-      formData.append('files', file);
-    });
+    this.selectedFiles
+      .filter((f) => !f.existing)
+      .forEach((f) => formData.append('newFiles', f));
 
-    this.apiService.registerDatabase(formData).subscribe({
+    this.removedFilesIds = this.selectedFiles
+      .filter((f) => f.markedForRemoval && f.existing && f.id !== undefined)
+      .map((f) => f.id as number);
+
+    this.removedFilesIds.forEach((id) =>
+      formData.append('removedFileIds', id.toString())
+    );
+
+    this.apiService.editDatabase(formData).subscribe({
       next: () => this.router.navigate(['/database']),
       error: (err) => {
-        console.error('Error registering database:', err);
-        this.errorMessage.set('Failed to register database. Please try again.');
+        console.error('Error editing database:', err);
+        this.errorMessage.set('Failed to edit database. Please try again.');
       },
     });
   }

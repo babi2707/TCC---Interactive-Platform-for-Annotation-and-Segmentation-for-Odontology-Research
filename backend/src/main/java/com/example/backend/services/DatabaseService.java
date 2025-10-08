@@ -79,10 +79,49 @@ public class DatabaseService implements IDatabaseService {
 
     @Override
     public void deleteDatabase(Long databaseId) {
-        if(!databaseRepository.existsById(Math.toIntExact(databaseId))) {
+        if (!databaseRepository.existsById(Math.toIntExact(databaseId))) {
             throw new RuntimeException("Database not found with id: " + databaseId);
         }
 
         databaseRepository.deleteById(Math.toIntExact(databaseId));
+    }
+
+    @Override
+    public Database editDatabase(Long id, String name, MultipartFile[] newFiles, Long[] removedFileIds) {
+        Database database = databaseRepository.findById(Math.toIntExact(id))
+                .orElseThrow(() -> new RuntimeException("Database not found"));
+
+        database.setName(name);
+
+        if (removedFileIds != null) {
+            for (Long fileId : removedFileIds) {
+                imageRepository.deleteById(fileId);
+            }
+        }
+
+        if (newFiles != null) {
+            for (MultipartFile file : newFiles) {
+                try {
+                    String originalFilename = file.getOriginalFilename();
+                    String filename = System.currentTimeMillis() + "_" + originalFilename;
+                    Path filePath = Paths.get(UPLOAD_DIR + filename);
+
+                    Files.copy(file.getInputStream(), filePath);
+
+                    Image image = new Image();
+                    image.setDatabase(database);
+                    image.setFile_path(filePath.toString().replace("\\", "/"));
+                    image.setCreatedAt(LocalDateTime.now());
+                    image.setUpdatedAt(LocalDateTime.now());
+                    image.setEdited(false);
+
+                    imageRepository.save(image);
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to save file: " + file.getOriginalFilename(), e);
+                }
+            }
+        }
+
+        return databaseRepository.save(database);
     }
 }
