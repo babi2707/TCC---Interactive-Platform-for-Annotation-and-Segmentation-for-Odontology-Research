@@ -68,6 +68,13 @@ export class Database {
     });
   }
 
+  navigateToDatabaseEdit(databaseId: number, database: any, event: MouseEvent) {
+    event.stopPropagation();
+    this.router.navigate(['/edit-database', databaseId], {
+      state: { database },
+    });
+  }
+
   toggleDatabaseDropdown(key: string, event: MouseEvent) {
     event.stopPropagation();
     this.openDropdowns[key] = !this.openDropdowns[key];

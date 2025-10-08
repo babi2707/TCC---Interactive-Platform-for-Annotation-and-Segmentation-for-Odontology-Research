@@ -28,16 +28,14 @@
                 </div>
 
                 <div class="database-dropdown" *ngIf="openDropdowns[database.id]" appClickOutside
-                    (clickOutside)="closeDatabaseDropdown(database.id)">
-                    <button class="dropdown-item">
+                    (clickOutside)="closeDatabaseDropdown(database.id)" (click)="$event.stopPropagation()">
+                    <button class="dropdown-item" (click)="navigateToDatabaseEdit(database.id, database, $event)">
                         <span class="material-symbols-outlined">edit</span>
                         Edit Dataset
                     </button>
                     <mat-divider></mat-divider>
                     <button class="dropdown-item">
-                        <span class="material-symbols-outlined">
-                            download
-                        </span>
+                        <span class="material-symbols-outlined">download</span>
                         Download Dataset
                     </button>
                     <mat-divider></mat-divider>
@@ -45,8 +43,8 @@
                         <span class="material-symbols-outlined">delete</span>
                         Delete Dataset
                     </button>
-
                 </div>
+
             </div>
 
             <div class="database-item new-database-item" (click)="navigateToDatabaseRegister()">

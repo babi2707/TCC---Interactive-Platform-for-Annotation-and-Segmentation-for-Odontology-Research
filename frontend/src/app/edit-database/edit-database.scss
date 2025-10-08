@@ -1,0 +1,75 @@
+.register-database {
+  padding: 2rem;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 400px;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+}
+
+.register-database-container,
+.register-database-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.name {
+  font-size: 16px;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+}
+
+.file-existing {
+  color: gray;
+}
+
+.file-new {
+  color: green;
+}
+
+.error {
+  color: red;
+  margin-top: 0;
+  font-size: 14px;
+}
+
+.add-files-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: #e8def8;
+  border-radius: 6px;
+  padding: 6px 12px;
+  text-transform: none;
+  font-weight: 500;
+  font-size: 14px;
+  width: fit-content;
+  margin-bottom: 2rem;
+}
+
+.add-files-button:hover {
+  background-color: #d0c0f0;
+}
+
+.add-database-button {
+  margin-top: 1rem;
+}
+
+.button-back {
+  margin-top: 2rem;
+}

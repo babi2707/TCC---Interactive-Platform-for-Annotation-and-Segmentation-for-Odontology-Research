@@ -1,7 +1,7 @@
 <div class="register-database">
     <div class="register-database-container">
         <div class="title">
-            <h2>New Dataset</h2>
+            <h2>Edit Dataset</h2>
         </div>
 
         <form class="register-database-form" #form="ngForm" (ngSubmit)="onRegisterNewDatabase()">
@@ -24,10 +24,18 @@
                 style="display: none" />
 
             <div *ngIf="selectedFiles.length > 0" class="file-list">
-                <p *ngFor="let file of selectedFiles">{{ file.name }}</p>
+                <div *ngFor="let file of selectedFiles; let i = index" class="file-item">
+                    <span [ngClass]="file.existing ? 'file-existing' : 'file-new'">
+                        {{ file.name }}
+                    </span>
+                    <button mat-icon-button color="warn" (click)="removeFile(i)">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </div>
             </div>
 
-            <button class="add-database-button" mat-raised-button color="primary" type="submit">Add database</button>
+
+            <button class="add-database-button" mat-raised-button color="primary" type="submit">Save changes</button>
         </form>
 
         <div class="button-back">
