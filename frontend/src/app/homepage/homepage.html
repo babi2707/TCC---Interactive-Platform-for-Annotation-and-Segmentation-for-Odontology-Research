@@ -1,7 +1,7 @@
 <div class="homepage">
     <div class="toolbar">
         <button class="logo">Logo</button>
-        <button class="segmentation">Automatic Segmentation</button>
+        <button class="segmentation" matTooltip="Automatic Segmentation">Automatic Segmentation</button>
 
         <div class="brush-size-control">
             <input type="range" min="1" max="50" [value]="brushSize" (input)="updateBrushSize($event)" />
@@ -18,7 +18,7 @@
                 circle
             </span>
             <button (click)="setBrushMode('object')">
-                <span class="material-symbols-outlined">brush</span>
+                <span class="material-symbols-outlined" matTooltip="Object brush">brush</span>
             </button>
             <div *ngIf="showColorPicker && activeBrushMode === 'object'" class="color-panel">
                 <color-sketch [color]="objectBrushColor" (onChangeComplete)="onColorChange($event)"></color-sketch>
@@ -30,19 +30,25 @@
                 circle
             </span>
             <button (click)="setBrushMode('background')">
-                <span class="material-symbols-outlined">slide_library</span>
+                <span class="material-symbols-outlined" matTooltip="Background brush">slide_library</span>
             </button>
             <div *ngIf="showColorPicker && activeBrushMode === 'background'" class="color-panel">
                 <color-sketch [color]="backgroundBrushColor" (onChangeComplete)="onColorChange($event)"></color-sketch>
             </div>
         </div>
 
+        <div class="eraser">
+            <button><span class="material-symbols-outlined" matTooltip="Eraser">
+                    backspace
+                </span></button>
+        </div>
+
         <div class="together zoom">
             <button (click)="zoomIn()">
-                <span class="material-symbols-outlined">zoom_in</span>
+                <span class="material-symbols-outlined" matTooltip="Zoom In">zoom_in</span>
             </button>
             <button (click)="zoomOut()">
-                <span class="material-symbols-outlined">zoom_out</span>
+                <span class="material-symbols-outlined" matTooltip="Zoom Out">zoom_out</span>
             </button>
             <span class="zoom-label">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
         </div>
@@ -50,14 +56,14 @@
 
         <div class="together">
             <button (click)="clearCanvas()">
-                <span class="material-symbols-outlined">undo</span>
+                <span class="material-symbols-outlined" matTooltip="Undo">undo</span>
             </button>
-            <button><span class="material-symbols-outlined">redo</span></button>
+            <button><span class="material-symbols-outlined" matTooltip="Redo">redo</span></button>
         </div>
 
         <div class="download">
             <button (click)="toggleDownloadDropdown($event)">
-                <span class="material-symbols-outlined">download</span>
+                <span class="material-symbols-outlined" matTooltip="Download">download</span>
             </button>
 
             <div class="download-dropdown" *ngIf="showDownloadDropdown" appClickOutside
@@ -79,11 +85,11 @@
 
     <div class="images-area">
         <div class="image-block">
-            <h3>Imagem original</h3>
+            <h3>Original Image</h3>
             <div class="image-container" (mousemove)="onMouseMove($event)" (mouseleave)="hideBrush()"
                 (mousedown)="startDrawing($event)" (mouseup)="stopDrawing()" (mouseout)="stopDrawing()">
 
-                <img [src]="imageUrl" alt="Imagem original" #imageElement />
+                <img [src]="imageUrl" alt="Original Image" #imageElement />
 
                 <canvas #drawCanvas class="draw-layer"></canvas>
 
@@ -99,8 +105,8 @@
         </div>
 
         <div class="image-block">
-            <h3>Imagem segmentada/anotada</h3>
-            <img [src]="segmentedImageUrl || imageUrl" alt="Imagem segmentada" class="grayscale" />
+            <h3>Segmented/Annotated Image</h3>
+            <img [src]="segmentedImageUrl || imageUrl" alt="Segmented Image" class="grayscale" />
         </div>
     </div>
 </div>

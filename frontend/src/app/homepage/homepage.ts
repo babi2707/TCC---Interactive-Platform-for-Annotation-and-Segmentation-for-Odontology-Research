@@ -14,6 +14,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { ProfileSymbol } from '../profile-symbol/profile-symbol';
 import { ApiService } from '../api.services';
 import { ColorSketchModule } from 'ngx-color/sketch';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 interface BrushStroke {
   x: number;
@@ -38,6 +39,7 @@ interface ObjectRegion {
     MatDividerModule,
     ProfileSymbol,
     ColorSketchModule,
+    MatTooltipModule,
   ],
   templateUrl: './homepage.html',
   styleUrls: ['./homepage.scss'],
