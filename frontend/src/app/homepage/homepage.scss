@@ -65,6 +65,16 @@
   align-items: center;
 }
 
+.color-picker-container.active button {
+  background-color: #ddd;
+  border-radius: 8px;
+  transform: scale(1.05);
+}
+
+.color-picker-container button {
+  transition: all 0.2s ease;
+}
+
 .color-panel {
   position: absolute;
   top: 120%;
@@ -93,6 +103,14 @@
 
 .grayscale {
   filter: grayscale(100%);
+}
+
+.draw-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 5;
 }
 
 /* --- GRUPO DE ELEMENTOS JUNTOS --- */
@@ -132,7 +150,7 @@
   gap: 10px;
 }
 
-.brush-size-control input[type='range'] {
+.brush-size-control input[type="range"] {
   width: 120px;
   cursor: pointer;
 }
@@ -149,4 +167,37 @@
   pointer-events: none;
   opacity: 0.5;
   transform: translate(-50%, -50%);
+}
+
+.download {
+  position: relative; /* 🔹 Adiciona esta linha */
+}
+
+.download-dropdown {
+  position: absolute;
+  top: 100%; /* 🔹 Faz aparecer logo abaixo do botão */
+  right: 0; /* 🔹 Alinha à direita do botão */
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  z-index: 1000;
+}
+
+.download-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.download-dropdown .dropdown-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }

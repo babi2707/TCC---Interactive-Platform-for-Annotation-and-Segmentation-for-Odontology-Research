@@ -2,6 +2,7 @@
     <div class="toolbar">
         <button class="logo">Logo</button>
         <button class="segmentation">Automatic Segmentation</button>
+
         <div class="brush-size-control">
             <input type="range" min="1" max="50" [value]="brushSize" (input)="updateBrushSize($event)" />
             <div class="brush-preview" [ngStyle]="{
@@ -12,23 +13,61 @@
             </div>
         </div>
 
-        <div class="together color-picker-container">
-            <span class="material-symbols-outlined color-indicator" [ngStyle]="{ color: brushColor }">
+        <div class="together color-picker-container" [class.active]="activeBrushMode === 'object'">
+            <span class="material-symbols-outlined color-indicator" [ngStyle]="{ color: objectBrushColor }">
                 circle
             </span>
-
-            <button (click)="toggleColorPicker()">
+            <button (click)="setBrushMode('object')">
                 <span class="material-symbols-outlined">brush</span>
             </button>
-
-            <div *ngIf="showColorPicker" class="color-panel">
-                <color-sketch [color]="brushColor" (onChangeComplete)="onColorChange($event)"></color-sketch>
+            <div *ngIf="showColorPicker && activeBrushMode === 'object'" class="color-panel">
+                <color-sketch [color]="objectBrushColor" (onChangeComplete)="onColorChange($event)"></color-sketch>
             </div>
         </div>
 
+        <div class="together color-picker-container" [class.active]="activeBrushMode === 'background'">
+            <span class="material-symbols-outlined color-indicator" [ngStyle]="{ color: backgroundBrushColor }">
+                circle
+            </span>
+            <button (click)="setBrushMode('background')">
+                <span class="material-symbols-outlined">slide_library</span>
+            </button>
+            <div *ngIf="showColorPicker && activeBrushMode === 'background'" class="color-panel">
+                <color-sketch [color]="backgroundBrushColor" (onChangeComplete)="onColorChange($event)"></color-sketch>
+            </div>
+        </div>
+
+        <div class="together zoom">
+            <button (click)="zoomIn()">
+                <span class="material-symbols-outlined">zoom_in</span>
+            </button>
+            <button (click)="zoomOut()">
+                <span class="material-symbols-outlined">zoom_out</span>
+            </button>
+        </div>
+
         <div class="together">
-            <button><span class="material-symbols-outlined">undo</span></button>
+            <button (click)="clearCanvas()">
+                <span class="material-symbols-outlined">undo</span>
+            </button>
             <button><span class="material-symbols-outlined">redo</span></button>
+        </div>
+
+        <div class="download">
+            <button (click)="toggleDownloadDropdown($event)">
+                <span class="material-symbols-outlined">download</span>
+            </button>
+
+            <div class="download-dropdown" *ngIf="showDownloadDropdown" appClickOutside
+                (clickOutside)="closeDownloadDropdown()">
+                <button class="dropdown-item" (click)="downloadAnnotatedImage()">
+                    Download Annotations
+                </button>
+                <mat-divider></mat-divider>
+                <button class="dropdown-item" (click)="downloadAnnotations()">
+                    Download Markers
+                </button>
+            </div>
         </div>
 
         <div class="user-menu">
@@ -39,8 +78,13 @@
     <div class="images-area">
         <div class="image-block">
             <h3>Imagem original</h3>
-            <div class="image-container" (mousemove)="onMouseMove($event)" (mouseleave)="hideBrush()">
-                <img [src]="imageUrl" alt="Imagem original" />
+            <div class="image-container" (mousemove)="onMouseMove($event)" (mouseleave)="hideBrush()"
+                (mousedown)="startDrawing($event)" (mouseup)="stopDrawing()" (mouseout)="stopDrawing()">
+
+                <img [src]="imageUrl" alt="Imagem original" #imageElement />
+
+                <canvas #drawCanvas class="draw-layer"></canvas>
+
                 <div class="brush-cursor" *ngIf="showBrush" [ngStyle]="{
                     top: brushY + 'px',
                     left: brushX + 'px',
@@ -51,7 +95,6 @@
                 </div>
             </div>
         </div>
-
 
         <div class="image-block">
             <h3>Imagem segmentada/anotada</h3>
