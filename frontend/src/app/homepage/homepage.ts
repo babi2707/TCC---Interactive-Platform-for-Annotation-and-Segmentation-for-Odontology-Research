@@ -75,6 +75,11 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
   showDownloadDropdown = false;
 
+  zoomLevel: number = 1;
+  minZoom: number = 0.5;
+  maxZoom: number = 3;
+  zoomStep: number = 0.1;
+
   constructor(private route: ActivatedRoute, private apiService: ApiService) {}
 
   ngOnInit() {
@@ -159,7 +164,9 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.showBrush = true;
 
     if (this.drawing) {
-      this.draw(x, y);
+      const drawX = (x - rect.width / 2) / this.zoomLevel + rect.width / 2;
+      const drawY = (y - rect.height / 2) / this.zoomLevel + rect.height / 2;
+      this.draw(drawX, drawY);
     }
   }
 
@@ -170,17 +177,21 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
     const container = event.currentTarget as HTMLElement;
     const rect = container.getBoundingClientRect();
+
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
+    const drawX = (x - rect.width / 2) / this.zoomLevel + rect.width / 2;
+    const drawY = (y - rect.height / 2) / this.zoomLevel + rect.height / 2;
+
     this.currentStroke.push({
-      x,
-      y,
+      x: drawX,
+      y: drawY,
       mode: this.activeBrushMode,
       color: this.brushColor,
     });
 
-    this.draw(x, y, true);
+    this.draw(drawX, drawY, true);
   }
 
   stopDrawing() {
@@ -342,9 +353,32 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.showColorPicker = !this.showColorPicker;
   }
 
-  zoomIn() {}
+  zoomIn() {
+    if (this.zoomLevel < this.maxZoom) {
+      this.zoomLevel = +(this.zoomLevel + this.zoomStep).toFixed(2);
+      this.applyZoom();
+    }
+  }
 
-  zoomOut() {}
+  zoomOut() {
+    if (this.zoomLevel > this.minZoom) {
+      this.zoomLevel = +(this.zoomLevel - this.zoomStep).toFixed(2);
+      this.applyZoom();
+    }
+  }
+
+  applyZoom() {
+    const img = this.imageElement?.nativeElement;
+    const canvas = this.drawCanvas?.nativeElement;
+
+    if (img && canvas) {
+      img.style.transform = `scale(${this.zoomLevel})`;
+      img.style.transformOrigin = 'center center';
+
+      canvas.style.transform = `scale(${this.zoomLevel})`;
+      canvas.style.transformOrigin = 'center center';
+    }
+  }
 
   @HostListener('document:click', ['$event'])
   onClickOutside(event: MouseEvent) {

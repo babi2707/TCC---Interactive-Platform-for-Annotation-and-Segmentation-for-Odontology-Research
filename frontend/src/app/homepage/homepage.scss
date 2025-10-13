@@ -110,6 +110,8 @@
   top: 0;
   left: 0;
   pointer-events: none;
+  width: 100%;
+  height: 100%;
   z-index: 5;
 }
 
@@ -142,6 +144,15 @@
 .image-container {
   position: relative;
   display: inline-block;
+  overflow: hidden;
+  transform-origin: center center;
+  cursor: none;
+}
+
+.image-container img,
+.image-container canvas {
+  display: block;
+  transition: transform 0.25s ease;
 }
 
 .brush-size-control {
@@ -165,8 +176,11 @@
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.7;
   transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  z-index: 10;
 }
 
 .download {
@@ -200,4 +214,10 @@
 
 .download-dropdown .dropdown-item:hover {
   background-color: rgba(0, 0, 0, 0.05);
+}
+
+.zoom-label {
+  margin-left: 8px;
+  font-size: 14px;
+  color: #555;
 }

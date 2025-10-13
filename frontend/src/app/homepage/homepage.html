@@ -44,7 +44,9 @@
             <button (click)="zoomOut()">
                 <span class="material-symbols-outlined">zoom_out</span>
             </button>
+            <span class="zoom-label">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
         </div>
+
 
         <div class="together">
             <button (click)="clearCanvas()">
