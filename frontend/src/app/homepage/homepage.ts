@@ -78,7 +78,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   showDownloadDropdown = false;
 
   zoomLevel: number = 1;
-  minZoom: number = 0.5;
+  minZoom: number = 1;
   maxZoom: number = 3;
   zoomStep: number = 0.1;
 
@@ -380,6 +380,14 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       canvas.style.transform = `scale(${this.zoomLevel})`;
       canvas.style.transformOrigin = 'center center';
     }
+  }
+
+  get canZoomIn(): boolean {
+    return this.zoomLevel < this.maxZoom;
+  }
+
+  get canZoomOut(): boolean {
+    return this.zoomLevel > this.minZoom;
   }
 
   @HostListener('document:click', ['$event'])

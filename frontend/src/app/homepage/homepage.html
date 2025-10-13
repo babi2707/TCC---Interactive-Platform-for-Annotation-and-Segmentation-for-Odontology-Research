@@ -44,11 +44,11 @@
         </div>
 
         <div class="together zoom">
-            <button (click)="zoomIn()">
-                <span class="material-symbols-outlined" matTooltip="Zoom In">zoom_in</span>
+            <button (click)="zoomIn()" [disabled]="!canZoomIn" [class.disabled]="!canZoomIn" matTooltip="Zoom In">
+                <span class="material-symbols-outlined">zoom_in</span>
             </button>
-            <button (click)="zoomOut()">
-                <span class="material-symbols-outlined" matTooltip="Zoom Out">zoom_out</span>
+            <button (click)="zoomOut()" [disabled]="!canZoomOut" [class.disabled]="!canZoomOut" matTooltip="Zoom Out">
+                <span class="material-symbols-outlined">zoom_out</span>
             </button>
             <span class="zoom-label">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
         </div>
