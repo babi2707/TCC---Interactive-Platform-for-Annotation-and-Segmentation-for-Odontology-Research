@@ -15,31 +15,36 @@
         </div>
 
         <div class="together color-picker-container" [class.active]="activeBrushMode === 'object'">
-            <span class="material-symbols-outlined color-indicator" [ngStyle]="{ color: objectBrushColor }">
+            <span class="material-symbols-outlined color-indicator" (click)="openObjectColorPicker()"
+                [ngStyle]="{ color: objectBrushColor }">
                 circle
             </span>
-            <button (click)="setBrushMode('object')">
+            <button (click)="setBrushMode('object')" [class.active]="activeTool === 'object'">
                 <span class="material-symbols-outlined" matTooltip="Object brush">brush</span>
             </button>
-            <div *ngIf="showColorPicker && activeBrushMode === 'object'" class="color-panel">
-                <color-sketch [color]="objectBrushColor" (onChangeComplete)="onColorChange($event)"></color-sketch>
+            <div *ngIf="showObjectColorPicker" class="color-panel">
+                <color-sketch [color]="objectBrushColor"
+                    (onChangeComplete)="onObjectColorChange($event)"></color-sketch>
             </div>
         </div>
 
         <div class="together color-picker-container" [class.active]="activeBrushMode === 'background'">
-            <span class="material-symbols-outlined color-indicator" [ngStyle]="{ color: backgroundBrushColor }">
+            <span class="material-symbols-outlined color-indicator" (click)="openBackgroundColorPicker()"
+                [ngStyle]="{ color: backgroundBrushColor }">
                 circle
             </span>
-            <button (click)="setBrushMode('background')">
+            <button (click)="setBrushMode('background')" [class.active]="activeTool === 'background'">
                 <span class="material-symbols-outlined" matTooltip="Background brush">slide_library</span>
             </button>
-            <div *ngIf="showColorPicker && activeBrushMode === 'background'" class="color-panel">
-                <color-sketch [color]="backgroundBrushColor" (onChangeComplete)="onColorChange($event)"></color-sketch>
+            <div *ngIf="showBackgroundColorPicker" class="color-panel">
+                <color-sketch [color]="backgroundBrushColor"
+                    (onChangeComplete)="onBackgroundColorChange($event)"></color-sketch>
             </div>
         </div>
 
         <div class="eraser">
-            <button (click)="erase()"><span class="material-symbols-outlined" matTooltip="Eraser">
+            <button (click)="erase()" [class.active]="activeTool === 'eraser'"><span class="material-symbols-outlined"
+                    matTooltip="Eraser">
                     backspace
                 </span></button>
         </div>

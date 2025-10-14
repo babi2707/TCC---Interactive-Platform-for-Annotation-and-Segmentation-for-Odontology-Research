@@ -58,7 +58,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   brushX: number = 0;
   brushY: number = 0;
   showBrush = false;
-  showColorPicker = false;
+  showObjectColorPicker = false;
+  showBackgroundColorPicker = false;
   brushSize: number = 10;
   drawing = false;
   activeBrushMode: 'object' | 'background' | 'eraser' = 'object';
@@ -66,6 +67,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   backgroundBrushColor: string = '#0ac404ff';
   brushStrokes: BrushStroke[] = [];
   objectRegions: ObjectRegion[] = [];
+
+  activeTool: 'object' | 'background' | 'eraser' | null = 'object';
 
   private resizeObserver!: ResizeObserver;
   private currentStroke: {
@@ -111,6 +114,11 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
+  }
+
+  setActiveTool(tool: 'object' | 'background' | 'eraser') {
+    this.activeTool = tool;
+    this.activeBrushMode = tool === 'eraser' ? 'eraser' : tool;
   }
 
   initCanvas() {
@@ -249,12 +257,17 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   erase() {
+    this.activeTool = 'eraser';
     this.activeBrushMode = 'eraser';
     this.showBrush = true;
   }
 
   private saveCurrentStrokeAsRegion() {
-    if (this.currentStroke.length > 1 && (this.activeBrushMode === 'object' || this.activeBrushMode === 'background')) {
+    if (
+      this.currentStroke.length > 1 &&
+      (this.activeBrushMode === 'object' ||
+        this.activeBrushMode === 'background')
+    ) {
       const region: ObjectRegion = {
         type: this.activeBrushMode,
         points: [
@@ -354,21 +367,32 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.brushSize = Number(event.target.value);
   }
 
-  onColorChange(event: any) {
-    if (this.activeBrushMode === 'object') {
-      this.objectBrushColor = event.color.hex;
-    } else {
-      this.backgroundBrushColor = event.color.hex;
-    }
+  onObjectColorChange(event: any) {
+    this.objectBrushColor = event.color.hex;
+  }
+
+  onBackgroundColorChange(event: any) {
+    this.backgroundBrushColor = event.color.hex;
+  }
+
+  openObjectColorPicker() {
+    this.showObjectColorPicker = true;
+    this.showBackgroundColorPicker = false;
+  }
+
+  openBackgroundColorPicker() {
+    this.showBackgroundColorPicker = true;
+    this.showObjectColorPicker = false;
   }
 
   setBrushMode(mode: 'object' | 'background') {
+    this.activeTool = mode;
     this.activeBrushMode = mode;
-    this.showColorPicker = true;
   }
 
   toggleColorPicker() {
-    this.showColorPicker = !this.showColorPicker;
+    this.showBackgroundColorPicker = !this.showBackgroundColorPicker;
+    this.showObjectColorPicker = !this.showObjectColorPicker;
   }
 
   zoomIn() {
@@ -410,7 +434,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   onClickOutside(event: MouseEvent) {
     const target = event.target as HTMLElement;
     if (!target.closest('.color-picker-container')) {
-      this.showColorPicker = false;
+      this.showBackgroundColorPicker = false;
+      this.showObjectColorPicker = false;
     }
 
     if (!target.closest('.download')) {
