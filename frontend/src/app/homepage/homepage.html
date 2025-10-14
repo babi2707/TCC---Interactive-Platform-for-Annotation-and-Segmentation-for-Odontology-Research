@@ -8,8 +8,9 @@
             <div class="brush-preview" [ngStyle]="{
                 width: brushSize + 'px',
                 height: brushSize + 'px',
-                background: brushColor
-                }">
+                background: activeBrushMode === 'eraser' ? '#ffffff' : brushColor,
+                border: activeBrushMode === 'eraser' ? '1px solid #ccc' : 'none'
+            }">
             </div>
         </div>
 
@@ -38,7 +39,7 @@
         </div>
 
         <div class="eraser">
-            <button><span class="material-symbols-outlined" matTooltip="Eraser">
+            <button (click)="erase()"><span class="material-symbols-outlined" matTooltip="Eraser">
                     backspace
                 </span></button>
         </div>
@@ -96,11 +97,10 @@
                 <div class="brush-cursor" *ngIf="showBrush" [ngStyle]="{
                     top: brushY + 'px',
                     left: brushX + 'px',
-                    background: brushColor,
+                    background: activeBrushMode === 'eraser' ? 'white' : brushColor,
                     width: brushSize + 'px',
                     height: brushSize + 'px'
-                    }">
-                </div>
+                }"></div>
             </div>
         </div>
 

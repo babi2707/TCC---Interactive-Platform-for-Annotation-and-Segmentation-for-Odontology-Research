@@ -21,11 +21,11 @@ interface BrushStroke {
   y: number;
   size: number;
   color: string;
-  mode: 'object' | 'background';
+  mode: 'object' | 'background' | 'eraser';
 }
 
 interface ObjectRegion {
-  type: 'object' | 'background';
+  type: 'object' | 'background' | 'eraser';
   points: { x: number; y: number }[];
   color: string;
 }
@@ -61,7 +61,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   showColorPicker = false;
   brushSize: number = 10;
   drawing = false;
-  activeBrushMode: 'object' | 'background' = 'object';
+  activeBrushMode: 'object' | 'background' | 'eraser' = 'object';
   objectBrushColor: string = '#ff0000';
   backgroundBrushColor: string = '#0ac404ff';
   brushStrokes: BrushStroke[] = [];
@@ -71,7 +71,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   private currentStroke: {
     x: number;
     y: number;
-    mode: 'object' | 'background';
+    mode: 'object' | 'background' | 'eraser';
     color: string;
   }[] = [];
 
@@ -186,12 +186,14 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     const drawX = (x - rect.width / 2) / this.zoomLevel + rect.width / 2;
     const drawY = (y - rect.height / 2) / this.zoomLevel + rect.height / 2;
 
-    this.currentStroke.push({
-      x: drawX,
-      y: drawY,
-      mode: this.activeBrushMode,
-      color: this.brushColor,
-    });
+    if (this.activeBrushMode !== 'eraser') {
+      this.currentStroke.push({
+        x: drawX,
+        y: drawY,
+        mode: this.activeBrushMode === 'object' ? 'object' : 'background',
+        color: this.brushColor,
+      });
+    }
 
     this.draw(drawX, drawY, true);
   }
@@ -224,21 +226,35 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    this.ctx.strokeStyle = this.brushColor;
+    if (this.activeBrushMode === 'eraser') {
+      this.ctx.globalCompositeOperation = 'destination-out';
+      this.ctx.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+      this.ctx.globalCompositeOperation = 'source-over';
+      this.ctx.strokeStyle = this.brushColor;
+    }
+
     this.ctx.lineWidth = this.brushSize;
     this.ctx.stroke();
 
-    this.brushStrokes.push({
-      x,
-      y,
-      size: this.brushSize,
-      color: this.brushColor,
-      mode: this.activeBrushMode,
-    });
+    if (this.activeBrushMode !== 'eraser') {
+      this.brushStrokes.push({
+        x,
+        y,
+        size: this.brushSize,
+        color: this.brushColor,
+        mode: this.activeBrushMode,
+      });
+    }
+  }
+
+  erase() {
+    this.activeBrushMode = 'eraser';
+    this.showBrush = true;
   }
 
   private saveCurrentStrokeAsRegion() {
-    if (this.currentStroke.length > 1) {
+    if (this.currentStroke.length > 1 && (this.activeBrushMode === 'object' || this.activeBrushMode === 'background')) {
       const region: ObjectRegion = {
         type: this.activeBrushMode,
         points: [
