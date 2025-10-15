@@ -59,12 +59,11 @@
             <span class="zoom-label">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
         </div>
 
-
         <div class="together">
-            <button (click)="clearCanvas()">
-                <span class="material-symbols-outlined" matTooltip="Undo">undo</span>
+            <button (click)="clearCanvas()" [disabled]="!canUndo">
+                <span class="material-symbols-outlined" matTooltip="Undo" (click)="undo()">undo</span>
             </button>
-            <button><span class="material-symbols-outlined" matTooltip="Redo">redo</span></button>
+            <button [disabled]="!canRedo"><span class="material-symbols-outlined" matTooltip="Redo" (click)="redo()">redo</span></button>
         </div>
 
         <div class="download">

@@ -85,6 +85,11 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   maxZoom: number = 3;
   zoomStep: number = 0.1;
 
+  undoStack: { brushStrokes: BrushStroke[]; objectRegions: ObjectRegion[] }[] =
+    [];
+  redoStack: { brushStrokes: BrushStroke[]; objectRegions: ObjectRegion[] }[] =
+    [];
+
   constructor(private route: ActivatedRoute, private apiService: ApiService) {}
 
   ngOnInit() {
@@ -211,6 +216,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.currentStroke.length > 0) {
       this.saveCurrentStrokeAsRegion();
+      this.pushToUndoStack();
     }
 
     if (this.ctx) {
@@ -428,6 +434,71 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
   get canZoomOut(): boolean {
     return this.zoomLevel > this.minZoom;
+  }
+
+  private pushToUndoStack() {
+    const snapshot = {
+      brushStrokes: [...this.brushStrokes.map((s) => ({ ...s }))],
+      objectRegions: [
+        ...this.objectRegions.map((r) => ({
+          ...r,
+          points: r.points.map((p) => ({ ...p })),
+        })),
+      ],
+    };
+
+    this.undoStack.push(snapshot);
+    this.redoStack = [];
+  }
+
+  undo() {
+    if (this.undoStack.length === 0) return;
+
+    const current = {
+      brushStrokes: [...this.brushStrokes.map((s) => ({ ...s }))],
+      objectRegions: [
+        ...this.objectRegions.map((r) => ({
+          ...r,
+          points: r.points.map((p) => ({ ...p })),
+        })),
+      ],
+    };
+    this.redoStack.push(current);
+
+    const previous = this.undoStack.pop()!;
+    this.brushStrokes = previous.brushStrokes;
+    this.objectRegions = previous.objectRegions;
+
+    this.redrawStrokes();
+  }
+
+  redo() {
+    if (this.redoStack.length === 0) return;
+
+    const current = {
+      brushStrokes: [...this.brushStrokes.map((s) => ({ ...s }))],
+      objectRegions: [
+        ...this.objectRegions.map((r) => ({
+          ...r,
+          points: r.points.map((p) => ({ ...p })),
+        })),
+      ],
+    };
+    this.undoStack.push(current);
+
+    const next = this.redoStack.pop()!;
+    this.brushStrokes = next.brushStrokes;
+    this.objectRegions = next.objectRegions;
+
+    this.redrawStrokes();
+  }
+
+  get canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
+
+  get canRedo(): boolean {
+    return this.redoStack.length > 0;
   }
 
   @HostListener('document:click', ['$event'])
