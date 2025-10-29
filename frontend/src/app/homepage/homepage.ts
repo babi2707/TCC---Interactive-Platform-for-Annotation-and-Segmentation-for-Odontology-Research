@@ -85,6 +85,13 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   maxZoom: number = 3;
   zoomStep: number = 0.1;
 
+  isPanning: boolean = false;
+  panX: number = 0;
+  panY: number = 0;
+  startPanX: number = 0;
+  startPanY: number = 0;
+  showPanHint: boolean = false;
+
   undoStack: { brushStrokes: BrushStroke[]; objectRegions: ObjectRegion[] }[] =
     [];
   redoStack: { brushStrokes: BrushStroke[]; objectRegions: ObjectRegion[] }[] =
@@ -186,6 +193,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   startDrawing(event: MouseEvent) {
+    if (event.shiftKey) return;
+
     event.preventDefault();
     this.drawing = true;
     this.currentStroke = [];
@@ -249,6 +258,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.ctx.lineWidth = this.brushSize;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
     this.ctx.stroke();
 
     if (this.activeBrushMode !== 'eraser') {
@@ -405,6 +416,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     if (this.zoomLevel < this.maxZoom) {
       this.zoomLevel = +(this.zoomLevel + this.zoomStep).toFixed(2);
       this.applyZoom();
+      this.showPanHintMessage();
     }
   }
 
@@ -412,6 +424,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     if (this.zoomLevel > this.minZoom) {
       this.zoomLevel = +(this.zoomLevel - this.zoomStep).toFixed(2);
       this.applyZoom();
+      this.showPanHintMessage();
     }
   }
 
@@ -420,10 +433,12 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     const canvas = this.drawCanvas?.nativeElement;
 
     if (img && canvas) {
-      img.style.transform = `scale(${this.zoomLevel})`;
+      const transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoomLevel})`;
+
+      img.style.transform = transform;
       img.style.transformOrigin = 'center center';
 
-      canvas.style.transform = `scale(${this.zoomLevel})`;
+      canvas.style.transform = transform;
       canvas.style.transformOrigin = 'center center';
     }
   }
@@ -434,6 +449,13 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
   get canZoomOut(): boolean {
     return this.zoomLevel > this.minZoom;
+  }
+
+  private showPanHintMessage() {
+    if (this.zoomLevel > 1) {
+      this.showPanHint = true;
+      setTimeout(() => (this.showPanHint = false), 3500);
+    }
   }
 
   private pushToUndoStack() {
@@ -512,6 +534,32 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     if (!target.closest('.download')) {
       this.showDownloadDropdown = false;
     }
+  }
+
+  @HostListener('window:mousedown', ['$event'])
+  onMouseDownPan(event: MouseEvent) {
+    if (event.button === 0 && event.shiftKey && this.zoomLevel > 1) {
+      this.isPanning = true;
+      this.startPanX = event.clientX - this.panX;
+      this.startPanY = event.clientY - this.panY;
+      document.body.style.cursor = 'grab';
+      event.preventDefault();
+    }
+  }
+
+  @HostListener('window:mouseup')
+  onMouseUpPan() {
+    this.isPanning = false;
+    document.body.style.cursor = 'default';
+  }
+
+  @HostListener('window:mousemove', ['$event'])
+  onMouseMovePan(event: MouseEvent) {
+    if (!this.isPanning) return;
+
+    this.panX = event.clientX - this.startPanX;
+    this.panY = event.clientY - this.startPanY;
+    this.applyZoom();
   }
 
   generateAnnotationsTXT(): string {

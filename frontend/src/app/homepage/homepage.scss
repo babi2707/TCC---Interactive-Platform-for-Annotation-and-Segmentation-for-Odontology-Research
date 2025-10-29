@@ -154,12 +154,48 @@
   overflow: hidden;
   transform-origin: center center;
   cursor: none;
+  transition: transform 0.1s ease-out;
+}
+
+.image-container.panning {
+  cursor: grab !important;
 }
 
 .image-container img,
 .image-container canvas {
   display: block;
   transition: transform 0.25s ease;
+}
+
+.zoom-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 40, 40, 0.9);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  animation: fadeInOut 3.5s ease-in-out forwards;
+  z-index: 9999;
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  10%,
+  90% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
 }
 
 .brush-size-control {

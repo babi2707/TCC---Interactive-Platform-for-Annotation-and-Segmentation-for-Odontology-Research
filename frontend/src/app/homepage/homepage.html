@@ -63,7 +63,8 @@
             <button (click)="clearCanvas()" [disabled]="!canUndo">
                 <span class="material-symbols-outlined" matTooltip="Undo" (click)="undo()">undo</span>
             </button>
-            <button [disabled]="!canRedo"><span class="material-symbols-outlined" matTooltip="Redo" (click)="redo()">redo</span></button>
+            <button [disabled]="!canRedo"><span class="material-symbols-outlined" matTooltip="Redo"
+                    (click)="redo()">redo</span></button>
         </div>
 
         <div class="download">
@@ -89,6 +90,9 @@
     </div>
 
     <div class="images-area">
+        <div *ngIf="showPanHint" class="zoom-hint">
+            💡 Dica: pressione <b>Shift + botão esquerdo</b> para mover a imagem com o zoom.
+        </div>
         <div class="image-block">
             <h3>Original Image</h3>
             <div class="image-container" (mousemove)="onMouseMove($event)" (mouseleave)="hideBrush()"
