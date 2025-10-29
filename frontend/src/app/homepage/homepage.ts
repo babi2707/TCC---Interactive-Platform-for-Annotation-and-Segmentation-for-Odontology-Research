@@ -63,8 +63,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   brushSize: number = 10;
   drawing = false;
   activeBrushMode: 'object' | 'background' | 'eraser' = 'object';
-  objectBrushColor: string = '#ff0000';
-  backgroundBrushColor: string = '#0ac404ff';
+  objectBrushColor: string = '#0ac404ff';
+  backgroundBrushColor: string = '#ff0000';
   brushStrokes: BrushStroke[] = [];
   objectRegions: ObjectRegion[] = [];
 
