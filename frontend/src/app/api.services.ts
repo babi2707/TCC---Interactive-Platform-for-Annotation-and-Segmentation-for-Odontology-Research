@@ -45,4 +45,11 @@ export class ApiService {
       params: { imageId },
     });
   }
+
+  segmentation(filename: string) {
+    return this.http.post(
+      `${this.apiUrl}/image/segment?filename=${filename}`,
+      {}
+    );
+  }
 }

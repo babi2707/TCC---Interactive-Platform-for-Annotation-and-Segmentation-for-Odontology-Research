@@ -714,6 +714,31 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.showDownloadDropdown = false;
   }
 
+  automaticSegmentation() {
+    if (!this.imageUrl) {
+      alert('Nenhuma imagem carregada!');
+      return;
+    }
+
+    const filename = this.imageUrl.replace("uploads\\", "").split('/').pop()!;
+    console.log('Enviando para segmentação:', filename);
+
+    this.apiService.segmentation(filename).subscribe({
+      next: (res: any) => {
+        if (res.status === 'success') {
+          this.segmentedImageUrl = res.segmentedImageUrl;
+          alert('Segmentação automática concluída!');
+        } else {
+          alert('Falha ao realizar segmentação.');
+        }
+      },
+      error: (err) => {
+        console.error('Erro na segmentação automática:', err);
+        alert('Erro ao executar segmentação automática.');
+      },
+    });
+  }
+
   downloadAnnotations() {
     try {
       if (this.objectRegions.length === 0 && this.brushStrokes.length === 0) {

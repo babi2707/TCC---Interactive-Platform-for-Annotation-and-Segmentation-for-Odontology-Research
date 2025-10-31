@@ -1,7 +1,7 @@
 <div class="homepage">
     <div class="toolbar">
         <button class="logo">Logo</button>
-        <button class="segmentation" matTooltip="Automatic Segmentation">Automatic Segmentation</button>
+        <button class="segmentation" matTooltip="Automatic Segmentation" (click)="automaticSegmentation()">Automatic Segmentation</button>
 
         <div class="brush-size-control">
             <input type="range" min="1" max="50" [value]="brushSize" (input)="updateBrushSize($event)" />
