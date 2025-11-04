@@ -46,10 +46,7 @@ export class ApiService {
     });
   }
 
-  segmentation(filename: string) {
-    return this.http.post(
-      `${this.apiUrl}/image/segment?filename=${filename}`,
-      {}
-    );
+  segmentation(formData: FormData) {
+    return this.http.post(`${this.apiUrl}/image/segment`, formData);
   }
 }

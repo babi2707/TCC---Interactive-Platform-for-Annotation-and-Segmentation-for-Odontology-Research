@@ -15,6 +15,7 @@ import { ProfileSymbol } from '../profile-symbol/profile-symbol';
 import { ApiService } from '../api.services';
 import { ColorSketchModule } from 'ngx-color/sketch';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { debounceTime, Subject, Subscription } from 'rxjs';
 
 interface BrushStroke {
   x: number;
@@ -50,6 +51,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('imageElement', { static: false })
   imageElement!: ElementRef<HTMLImageElement>;
   private ctx!: CanvasRenderingContext2D;
+  @ViewChild('segmentedImage', { static: false })
+  segmentedImage!: ElementRef<HTMLImageElement>;
 
   imageId!: number;
   imageUrl: string = '';
@@ -96,6 +99,9 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     [];
   redoStack: { brushStrokes: BrushStroke[]; objectRegions: ObjectRegion[] }[] =
     [];
+
+  isSegmenting: boolean = false;
+  private currentSegmentedImageUrl: string = '';
 
   constructor(private route: ActivatedRoute, private apiService: ApiService) {}
 
@@ -199,67 +205,41 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.drawing = true;
     this.currentStroke = [];
 
-    const container = event.currentTarget as HTMLElement;
-    const rect = container.getBoundingClientRect();
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const drawX = event.clientX - rect.left;
+    const drawY = event.clientY - rect.top;
 
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const drawX = (x - rect.width / 2) / this.zoomLevel + rect.width / 2;
-    const drawY = (y - rect.height / 2) / this.zoomLevel + rect.height / 2;
-
-    if (this.activeBrushMode !== 'eraser') {
-      this.currentStroke.push({
-        x: drawX,
-        y: drawY,
-        mode: this.activeBrushMode === 'object' ? 'object' : 'background',
-        color: this.brushColor,
-      });
-    }
+    this.currentStroke.push({
+      x: drawX,
+      y: drawY,
+      mode: this.activeBrushMode,
+      color: this.brushColor,
+    });
 
     this.draw(drawX, drawY, true);
+
+    this.saveState();
   }
 
   stopDrawing() {
     this.drawing = false;
-
-    if (this.currentStroke.length > 0) {
-      this.saveCurrentStrokeAsRegion();
-      this.pushToUndoStack();
-    }
-
-    if (this.ctx) {
-      this.ctx.beginPath();
-    }
+    if (this.currentStroke.length > 0) this.saveCurrentStrokeAsRegion();
+    if (this.ctx) this.ctx.beginPath();
   }
 
   draw(x: number, y: number, isNewStroke: boolean = false) {
     if (!this.ctx) return;
-
-    if (isNewStroke) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, y);
-    } else {
-      this.ctx.lineTo(x, y);
-      this.currentStroke.push({
-        x,
-        y,
-        mode: this.activeBrushMode,
-        color: this.brushColor,
-      });
-    }
-
-    if (this.activeBrushMode === 'eraser') {
-      this.ctx.globalCompositeOperation = 'destination-out';
-      this.ctx.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-      this.ctx.globalCompositeOperation = 'source-over';
-      this.ctx.strokeStyle = this.brushColor;
-    }
+    if (isNewStroke) this.ctx.beginPath();
+    else this.ctx.lineTo(x, y);
 
     this.ctx.lineWidth = this.brushSize;
+    this.ctx.strokeStyle =
+      this.activeBrushMode === 'eraser' ? 'rgba(0,0,0,1)' : this.brushColor;
+    this.ctx.globalCompositeOperation =
+      this.activeBrushMode === 'eraser' ? 'destination-out' : 'source-over';
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
+    if (isNewStroke) this.ctx.moveTo(x, y);
     this.ctx.stroke();
 
     if (this.activeBrushMode !== 'eraser') {
@@ -279,6 +259,17 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.showBrush = true;
   }
 
+  private hasMarkers(): boolean {
+    const objectStrokes = this.brushStrokes.filter(
+      (s) => s.mode === 'object'
+    ).length;
+    const backgroundStrokes = this.brushStrokes.filter(
+      (s) => s.mode === 'background'
+    ).length;
+
+    return objectStrokes > 0 && backgroundStrokes > 0;
+  }
+
   private saveCurrentStrokeAsRegion() {
     if (
       this.currentStroke.length > 1 &&
@@ -287,9 +278,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     ) {
       const region: ObjectRegion = {
         type: this.activeBrushMode,
-        points: [
-          ...this.currentStroke.map((point) => ({ x: point.x, y: point.y })),
-        ],
+        points: this.currentStroke.map((p) => ({ x: p.x, y: p.y })),
         color: this.brushColor,
       };
       this.objectRegions.push(region);
@@ -297,9 +286,21 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.currentStroke = [];
   }
 
+  private saveState() {
+    this.undoStack.push({
+      brushStrokes: [...this.brushStrokes.map((s) => ({ ...s }))],
+      objectRegions: [
+        ...this.objectRegions.map((r) => ({
+          ...r,
+          points: r.points.map((p) => ({ ...p })),
+        })),
+      ],
+    });
+    this.redoStack = [];
+  }
+
   redrawStrokes() {
     if (!this.ctx) return;
-
     this.ctx.clearRect(
       0,
       0,
@@ -307,53 +308,23 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       this.drawCanvas.nativeElement.height
     );
 
-    const groupedStrokes = this.groupStrokes();
-
-    groupedStrokes.forEach((group) => {
-      this.ctx.strokeStyle = group.color;
-      this.ctx.lineWidth = group.size;
-      this.ctx.lineCap = 'round';
-      this.ctx.lineJoin = 'round';
-      this.ctx.beginPath();
-
-      group.points.forEach((point, index) => {
-        if (index === 0) {
-          this.ctx.moveTo(point.x, point.y);
-        } else {
-          this.ctx.lineTo(point.x, point.y);
-        }
-      });
-
+    this.brushStrokes.forEach((stroke, idx) => {
+      if (
+        idx === 0 ||
+        this.brushStrokes[idx - 1].color !== stroke.color ||
+        this.brushStrokes[idx - 1].size !== stroke.size
+      )
+        this.ctx.beginPath();
+      this.ctx.strokeStyle = stroke.color;
+      this.ctx.lineWidth = stroke.size;
+      this.ctx.moveTo(stroke.x, stroke.y);
+      if (idx < this.brushStrokes.length - 1)
+        this.ctx.lineTo(
+          this.brushStrokes[idx + 1].x,
+          this.brushStrokes[idx + 1].y
+        );
       this.ctx.stroke();
     });
-  }
-
-  private groupStrokes(): {
-    color: string;
-    size: number;
-    points: { x: number; y: number }[];
-  }[] {
-    const groups: {
-      [key: string]: {
-        color: string;
-        size: number;
-        points: { x: number; y: number }[];
-      };
-    } = {};
-
-    this.brushStrokes.forEach((stroke) => {
-      const key = `${stroke.color}-${stroke.size}`;
-      if (!groups[key]) {
-        groups[key] = {
-          color: stroke.color,
-          size: stroke.size,
-          points: [],
-        };
-      }
-      groups[key].points.push({ x: stroke.x, y: stroke.y });
-    });
-
-    return Object.values(groups);
   }
 
   clearCanvas() {
@@ -370,7 +341,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  get brushColor(): string {
+  get brushColor() {
     return this.activeBrushMode === 'object'
       ? this.objectBrushColor
       : this.backgroundBrushColor;
@@ -456,21 +427,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       this.showPanHint = true;
       setTimeout(() => (this.showPanHint = false), 3500);
     }
-  }
-
-  private pushToUndoStack() {
-    const snapshot = {
-      brushStrokes: [...this.brushStrokes.map((s) => ({ ...s }))],
-      objectRegions: [
-        ...this.objectRegions.map((r) => ({
-          ...r,
-          points: r.points.map((p) => ({ ...p })),
-        })),
-      ],
-    };
-
-    this.undoStack.push(snapshot);
-    this.redoStack = [];
   }
 
   undo() {
@@ -720,22 +676,139 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const filename = this.imageUrl.replace("uploads\\", "").split('/').pop()!;
-    console.log('Enviando para segmentação:', filename);
+    this.isSegmenting = true;
 
-    this.apiService.segmentation(filename).subscribe({
-      next: (res: any) => {
-        if (res.status === 'success') {
-          this.segmentedImageUrl = res.segmentedImageUrl;
-          alert('Segmentação automática concluída!');
+    this.generateMarkersMask()
+      .then((markersBlob) => {
+        const formData = new FormData();
+
+        fetch(this.imageUrl)
+          .then((imgResponse) => imgResponse.blob())
+          .then((imgBlob) => {
+            formData.append('image', imgBlob, 'original.png');
+            formData.append('markers', markersBlob, 'markers.png');
+
+            // Se já temos uma imagem segmentada, reutiliza o mesmo nome de arquivo
+            if (this.currentSegmentedImageUrl) {
+              const filename = this.extractFilenameFromUrl(
+                this.currentSegmentedImageUrl
+              );
+              if (filename) {
+                formData.append('outputFilename', filename);
+              }
+            }
+
+            this.apiService.segmentation(formData).subscribe({
+              next: (res: any) => {
+                if (res.status === 'success') {
+                  // Atualiza a URL da imagem segmentada com timestamp para evitar cache
+                  this.segmentedImageUrl =
+                    res.segmentedImageUrl + '?t=' + Date.now();
+                  this.currentSegmentedImageUrl = res.segmentedImageUrl;
+
+                  // Atualiza a imagem segmentada
+                  if (
+                    this.segmentedImage &&
+                    this.segmentedImage.nativeElement
+                  ) {
+                    this.segmentedImage.nativeElement.src =
+                      this.segmentedImageUrl;
+                  }
+
+                  console.log('Segmentação concluída com sucesso!');
+                } else {
+                  console.warn('Segmentação retornou status de erro:', res);
+                  alert('Falha ao realizar segmentação.');
+                }
+                this.isSegmenting = false;
+              },
+              error: (err) => {
+                console.error('Erro na segmentação automática:', err);
+                alert('Erro ao executar segmentação automática.');
+                this.isSegmenting = false;
+              },
+            });
+          })
+          .catch((error) => {
+            console.error('Erro ao carregar imagem:', error);
+            alert('Erro ao carregar imagem para segmentação.');
+            this.isSegmenting = false;
+          });
+      })
+      .catch((error) => {
+        console.error('Erro ao gerar máscara:', error);
+        alert('Erro ao gerar máscara para segmentação.');
+        this.isSegmenting = false;
+      });
+  }
+
+  private extractFilenameFromUrl(url: string): string | null {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const segments = pathname.split('/');
+      return segments[segments.length - 1];
+    } catch (error) {
+      console.error('Erro ao extrair filename da URL:', error);
+      return null;
+    }
+  }
+
+  async generateMarkersMask(): Promise<Blob> {
+    const drawCanvas = this.drawCanvas.nativeElement;
+    const img = this.imageElement.nativeElement;
+
+    // Canvas temporário com tamanho original
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = img.naturalWidth;
+    tempCanvas.height = img.naturalHeight;
+    const tempCtx = tempCanvas.getContext('2d')!;
+
+    const scaleX = tempCanvas.width / drawCanvas.width;
+    const scaleY = tempCanvas.height / drawCanvas.height;
+
+    // Aplica escala e desenha
+    tempCtx.save();
+    tempCtx.scale(scaleX, scaleY);
+    tempCtx.drawImage(drawCanvas, 0, 0);
+    tempCtx.restore();
+
+    const imageData = tempCtx.getImageData(
+      0,
+      0,
+      tempCanvas.width,
+      tempCanvas.height
+    );
+    const data = imageData.data;
+
+    // Processa pixels para criar máscara (vermelho = background, verde = objeto)
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+
+      // Verifica se é objeto (verde) ou background (vermelho)
+      const isObject = g > 50 && r < 100 && b < 100; // Threshold mais baixo
+      const isBackground = r > 50 && g < 100 && b < 100; // Threshold mais baixo
+
+      // Define cores: vermelho puro para background, verde puro para objeto
+      data[i] = isBackground ? 255 : isObject ? 0 : 0; // R
+      data[i + 1] = isObject ? 255 : isBackground ? 0 : 0; // G
+      data[i + 2] = 0; // B
+      data[i + 3] = isObject || isBackground ? 255 : 0; // A
+    }
+
+    tempCtx.putImageData(imageData, 0, 0);
+
+    return new Promise<Blob>((resolve) => {
+      tempCanvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
         } else {
-          alert('Falha ao realizar segmentação.');
+          throw new Error('Falha ao gerar blob da máscara');
         }
-      },
-      error: (err) => {
-        console.error('Erro na segmentação automática:', err);
-        alert('Erro ao executar segmentação automática.');
-      },
+      }, 'image/png');
     });
   }
 

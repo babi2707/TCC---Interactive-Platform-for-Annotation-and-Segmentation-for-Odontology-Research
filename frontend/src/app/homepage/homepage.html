@@ -1,7 +1,11 @@
 <div class="homepage">
     <div class="toolbar">
         <button class="logo">Logo</button>
-        <button class="segmentation" matTooltip="Automatic Segmentation" (click)="automaticSegmentation()">Automatic Segmentation</button>
+        <button class="segmentation" matTooltip="Automatic Segmentation" (click)="automaticSegmentation()"
+            [disabled]="isSegmenting">
+            <span class="material-symbols-outlined">auto_fix</span>
+            {{ isSegmenting ? 'Segmenting...' : 'Automatic Segmentation' }}
+        </button>
 
         <div class="brush-size-control">
             <input type="range" min="1" max="50" [value]="brushSize" (input)="updateBrushSize($event)" />
@@ -113,8 +117,9 @@
         </div>
 
         <div class="image-block">
-            <h3>Segmented/Annotated Image</h3>
-            <img [src]="segmentedImageUrl || imageUrl" alt="Segmented Image" class="grayscale" />
+            <h3>Segmented Image {{ isSegmenting ? '(Updating...)' : '' }}</h3>
+            <img [src]="segmentedImageUrl || imageUrl" alt="Segmented Image" #segmentedImage
+                [class.grayscale]="!segmentedImageUrl" />
         </div>
     </div>
 </div>
