@@ -31,6 +31,7 @@ public class SecurityConfig {
                         .requestMatchers("/database/**").permitAll()
                         .requestMatchers("/image/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/**").permitAll()
 
                         .anyRequest().authenticated()
                 );

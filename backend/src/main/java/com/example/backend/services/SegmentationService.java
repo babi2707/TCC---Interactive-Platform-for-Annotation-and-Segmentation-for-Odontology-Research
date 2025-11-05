@@ -10,7 +10,9 @@ public class SegmentationService {
 
     private static final String PYTHON_PATH = "C:\\Users\\Barbara\\AppData\\Local\\Programs\\Python\\Python311\\python.exe";
     private static final String SCRIPT_PATH = new File("python/interactive_object_segmentation.py").getAbsolutePath();
-    private static final String SEGMENTED_DIR = "src/main/resources/static/segmented/";
+
+    // CORREÇÃO: Mude para uma pasta mais simples
+    private static final String SEGMENTED_DIR = "segmented/";
 
     public String runAutomaticSegmentation(String imagePath, String markersPath, String outputFilename) throws IOException, InterruptedException {
 
@@ -66,7 +68,7 @@ public class SegmentationService {
             throw new RuntimeException("Arquivo segmentado não foi gerado: " + outputPath);
         }
 
-        // Retorna caminho relativo para servir no frontend
-        return "/segmented/" + finalOutputFilename;
+        // Retorna apenas o nome do arquivo
+        return finalOutputFilename;
     }
 }

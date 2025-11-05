@@ -688,7 +688,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
             formData.append('image', imgBlob, 'original.png');
             formData.append('markers', markersBlob, 'markers.png');
 
-            // Se já temos uma imagem segmentada, reutiliza o mesmo nome de arquivo
             if (this.currentSegmentedImageUrl) {
               const filename = this.extractFilenameFromUrl(
                 this.currentSegmentedImageUrl
@@ -700,31 +699,58 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
             this.apiService.segmentation(formData).subscribe({
               next: (res: any) => {
-                if (res.status === 'success') {
-                  // Atualiza a URL da imagem segmentada com timestamp para evitar cache
-                  this.segmentedImageUrl =
-                    res.segmentedImageUrl + '?t=' + Date.now();
-                  this.currentSegmentedImageUrl = res.segmentedImageUrl;
+                console.log('Resposta completa do servidor:', res);
 
-                  // Atualiza a imagem segmentada
-                  if (
-                    this.segmentedImage &&
-                    this.segmentedImage.nativeElement
-                  ) {
-                    this.segmentedImage.nativeElement.src =
-                      this.segmentedImageUrl;
+                if (res.status === 'success') {
+                  let segmentedImageUrl = res.segmentedImageUrl;
+
+                  if (!segmentedImageUrl) {
+                    console.error(
+                      'URL da imagem segmentada não encontrada na resposta:',
+                      res
+                    );
+                    alert(
+                      'URL da imagem segmentada não retornada pelo servidor.'
+                    );
+                    this.isSegmenting = false;
+                    return;
                   }
 
-                  console.log('Segmentação concluída com sucesso!');
+                  // CORREÇÃO: Garante que a URL seja absoluta
+                  if (!segmentedImageUrl.startsWith('http')) {
+                    if (segmentedImageUrl.startsWith('/')) {
+                      segmentedImageUrl = `http://localhost:8080${segmentedImageUrl}`;
+                    } else {
+                      segmentedImageUrl = `http://localhost:8080/${segmentedImageUrl}`;
+                    }
+                  }
+
+                  // Adiciona timestamp para evitar cache
+                  this.segmentedImageUrl =
+                    segmentedImageUrl + '?t=' + Date.now();
+                  this.currentSegmentedImageUrl = segmentedImageUrl;
+
+                  console.log(
+                    'URL final da imagem segmentada:',
+                    this.segmentedImageUrl
+                  );
+
+                  // Carrega a imagem imediatamente
+                  this.loadSegmentedImage();
                 } else {
                   console.warn('Segmentação retornou status de erro:', res);
-                  alert('Falha ao realizar segmentação.');
+                  alert(
+                    'Falha ao realizar segmentação: ' +
+                      (res.message || 'Erro desconhecido')
+                  );
+                  this.isSegmenting = false;
                 }
-                this.isSegmenting = false;
               },
               error: (err) => {
                 console.error('Erro na segmentação automática:', err);
-                alert('Erro ao executar segmentação automática.');
+                alert(
+                  'Erro ao executar segmentação automática: ' + err.message
+                );
                 this.isSegmenting = false;
               },
             });
@@ -740,6 +766,75 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
         alert('Erro ao gerar máscara para segmentação.');
         this.isSegmenting = false;
       });
+  }
+
+  // Nova função para carregar a imagem segmentada
+  private loadSegmentedImage() {
+    if (this.segmentedImage && this.segmentedImage.nativeElement) {
+      const img = new Image();
+
+      img.onload = () => {
+        console.log('✅ Imagem segmentada carregada com sucesso!');
+        this.segmentedImage.nativeElement.src = this.segmentedImageUrl;
+        this.isSegmenting = false;
+      };
+
+      img.onerror = (err) => {
+        console.error('❌ Erro ao carregar imagem segmentada:', err);
+        console.log('📁 URL tentada:', this.segmentedImageUrl);
+
+        // Tenta carregar sem o timestamp
+        const urlWithoutTimestamp = this.segmentedImageUrl.split('?')[0];
+        console.log('🔄 Tentando sem timestamp:', urlWithoutTimestamp);
+
+        const imgRetry = new Image();
+        imgRetry.onload = () => {
+          this.segmentedImage.nativeElement.src = urlWithoutTimestamp;
+          this.isSegmenting = false;
+        };
+        imgRetry.onerror = () => {
+          console.error('❌ Falha também sem timestamp');
+          this.isSegmenting = false;
+
+          // Mostra mensagem de erro mais detalhada
+          alert(
+            'Imagem segmentada foi gerada mas não pode ser carregada. Verifique o console para detalhes.'
+          );
+        };
+        imgRetry.src = urlWithoutTimestamp;
+      };
+
+      img.src = this.segmentedImageUrl;
+    } else {
+      this.isSegmenting = false;
+    }
+  }
+
+  // Adicione esta função para debug
+  async checkFileAccess() {
+    if (!this.segmentedImageUrl) return;
+
+    const testUrl = this.segmentedImageUrl.split('?')[0];
+    console.log('🔍 Verificando acesso ao arquivo:', testUrl);
+
+    try {
+      const response = await fetch(testUrl, { method: 'HEAD' });
+      console.log(
+        '📊 Status do arquivo:',
+        response.status,
+        response.statusText
+      );
+
+      if (response.status === 200) {
+        console.log('✅ Arquivo existe e é acessível');
+      } else if (response.status === 404) {
+        console.error('❌ Arquivo não encontrado (404)');
+      } else if (response.status === 403) {
+        console.error('❌ Acesso negado (403) - Problema de permissões');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao verificar arquivo:', error);
+    }
   }
 
   private extractFilenameFromUrl(url: string): string | null {

@@ -62,10 +62,11 @@ public class ImageController {
             markersFile.transferTo(new File(markersPath));
 
             // Executa a segmentação automática
-            String segmentedUrl = segmentationService.runAutomaticSegmentation(imagePath, markersPath, outputFilename);
+            String segmentedFilename = segmentationService.runAutomaticSegmentation(imagePath, markersPath, outputFilename);
 
             response.put("status", "success");
-            response.put("segmentedImageUrl", "http://localhost:8080" + segmentedUrl);
+            // CORREÇÃO: Use a nova URL do controller
+            response.put("segmentedImageUrl", "/api/files/segmented/" + segmentedFilename);
             return ResponseEntity.ok(response);
 
         } catch (IOException | InterruptedException e) {

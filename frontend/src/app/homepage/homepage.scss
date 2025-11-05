@@ -176,7 +176,11 @@
 
 .grayscale {
   filter: grayscale(100%);
-  opacity: 0.7;
+  opacity: 0.6;
+}
+
+.image-block img:not(.grayscale) {
+  border: 2px solid #4caf50;
 }
 
 .processing-overlay {
@@ -209,6 +213,11 @@
 }
 
 .segmentation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
   &.active {
     background-color: #4caf50;
     color: white;
@@ -218,6 +227,13 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
+}
+
+.segmentation .material-symbols-outlined {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
 }
 
 @keyframes fadeInOut {
