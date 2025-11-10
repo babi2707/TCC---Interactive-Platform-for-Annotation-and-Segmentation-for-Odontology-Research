@@ -1,10 +1,9 @@
 <div class="homepage">
     <div class="toolbar">
         <button class="logo">Logo</button>
-        <button class="segmentation" matTooltip="Run segmentation" (click)="automaticSegmentation()"
-            [disabled]="isSegmenting">
-            <span class="material-symbols-outlined">auto_fix</span>
-            {{ isSegmenting ? 'Segmenting...' : 'Segment' }}
+        <button class="segmentation" matTooltip="Perform Segmentation" (click)="performManualSegmentation()"
+            [disabled]="segmentationInProgress || !hasMarkers()" [class.active]="hasMarkers()">
+            {{ segmentationInProgress ? 'Segmenting...' : 'Segment' }}
         </button>
 
         <div class="brush-size-control">
@@ -117,10 +116,16 @@
         </div>
 
         <div class="image-block">
-            <h3>Segmented Image {{ isSegmenting ? '(Updating...)' : '' }}</h3>
+            <h3>Segmented Image {{ isSegmenting ? '(Processing...)' : '' }}</h3>
+            <div class="image-container">
+                <img [src]="segmentedImageUrl || imageUrl" alt="Segmented Image" #segmentedImage
+                    [class.grayscale]="!segmentedImageUrl" [class.loading]="isSegmenting" />
 
-            <img [src]="segmentedImageUrl || imageUrl" alt="Segmented Image" #segmentedImage
-                [class.grayscale]="!segmentedImageUrl || isSegmenting" />
+                <div *ngIf="isSegmenting" class="segmentation-loading">
+                    <div class="spinner"></div>
+                    <p>Processando segmentação...</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -10,11 +10,9 @@ public class SegmentationService {
 
     private static final String PYTHON_PATH = "C:\\Users\\Barbara\\AppData\\Local\\Programs\\Python\\Python311\\python.exe";
     private static final String SCRIPT_PATH = new File("python/interactive_object_segmentation.py").getAbsolutePath();
+    private static final String SEGMENTED_DIR = "src/main/resources/static/segmented/";
 
-    // CORREÇÃO: Mude para uma pasta mais simples
-    private static final String SEGMENTED_DIR = "segmented/";
-
-    public String runAutomaticSegmentation(String imagePath, String markersPath, String outputFilename) throws IOException, InterruptedException {
+    public String runAutomaticSegmentation(String imagePath, String markersPath) throws IOException, InterruptedException {
 
         if (imagePath == null || imagePath.isBlank()) {
             throw new IllegalArgumentException("Caminho da imagem não pode ser vazio.");
@@ -24,12 +22,9 @@ public class SegmentationService {
             throw new IllegalArgumentException("Caminho da máscara não pode ser vazio.");
         }
 
-        // Usa o filename fornecido ou gera um novo
-        String finalOutputFilename = outputFilename != null && !outputFilename.isBlank()
-                ? outputFilename
-                : "segmented_" + UUID.randomUUID() + ".png";
-
-        String outputPath = SEGMENTED_DIR + finalOutputFilename;
+        // Nome único para o arquivo segmentado
+        String outputFilename = "segmented_" + UUID.randomUUID() + ".png";
+        String outputPath = SEGMENTED_DIR + outputFilename;
 
         // Cria diretório se não existir
         new File(SEGMENTED_DIR).mkdirs();
@@ -68,7 +63,7 @@ public class SegmentationService {
             throw new RuntimeException("Arquivo segmentado não foi gerado: " + outputPath);
         }
 
-        // Retorna apenas o nome do arquivo
-        return finalOutputFilename;
+        // Retorna caminho relativo para servir no frontend
+        return "/segmented/" + outputFilename;
     }
 }
