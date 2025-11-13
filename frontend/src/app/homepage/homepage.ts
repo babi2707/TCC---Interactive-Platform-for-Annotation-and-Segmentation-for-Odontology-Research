@@ -699,6 +699,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
       formData.append('image', imgBlob, 'original.png');
       formData.append('markers', markersBlob, 'markers.png');
+      formData.append('imageId', this.imageId.toString());
 
       if (this.segmentedImageUrl) {
         const filename = this.extractFilenameFromUrl(this.segmentedImageUrl);

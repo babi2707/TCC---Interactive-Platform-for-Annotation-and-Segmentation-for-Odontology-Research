@@ -1,6 +1,6 @@
 package com.example.backend.entities;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,22 +11,18 @@ import java.time.LocalDateTime;
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
-@Table(name = "images")
-public class Image {
+@Table(name = "segmented_images")
+public class Segmented_Image {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "database_id")
-    private Database database;
+    @JoinColumn(name = "image_id")
+    private Image image;
 
     @Column(name = "file_path")
-    @JsonProperty("file_path")
-    private String filePath;
-
-    @Column(name = "edited")
-    private Boolean edited = false;
+    private String file_path;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -34,13 +30,12 @@ public class Image {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    public Image(Database database, String filePath, Boolean edited) {
-        this.database = database;
-        this.filePath = filePath;
-        this.edited = edited;
+    public Segmented_Image(Image image, String file_path) {
+        this.image = image;
+        this.file_path = file_path;
     }
 
-    public Image() {
+    public Segmented_Image() {
 
     }
 }

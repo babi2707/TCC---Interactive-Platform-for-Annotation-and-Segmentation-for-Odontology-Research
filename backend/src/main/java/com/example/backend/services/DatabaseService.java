@@ -55,7 +55,7 @@ public class DatabaseService implements IDatabaseService {
 
                 Image image = new Image();
                 image.setDatabase(database);
-                image.setFile_path(filePath.toString());
+                image.setFilePath(UPLOAD_DIR + filename);
                 image.setEdited(false);
                 image.setCreatedAt(LocalDateTime.now());
                 image.setUpdatedAt(LocalDateTime.now());
@@ -110,7 +110,7 @@ public class DatabaseService implements IDatabaseService {
 
                     Image image = new Image();
                     image.setDatabase(database);
-                    image.setFile_path(filePath.toString().replace("\\", "/"));
+                    image.setFilePath(filePath.toString().replace("\\", "/"));
                     image.setCreatedAt(LocalDateTime.now());
                     image.setUpdatedAt(LocalDateTime.now());
                     image.setEdited(false);

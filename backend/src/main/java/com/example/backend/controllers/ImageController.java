@@ -44,7 +44,8 @@ public class ImageController {
     @PostMapping("/segment")
     public ResponseEntity<Map<String, Object>> segmentImage(
             @RequestParam("image") MultipartFile imageFile,
-            @RequestParam("markers") MultipartFile markersFile
+            @RequestParam("markers") MultipartFile markersFile,
+            @RequestParam("imageId") Long imageId
     ) {
         Map<String, Object> response = new HashMap<>();
 
@@ -58,7 +59,7 @@ public class ImageController {
             imageFile.transferTo(new File(imagePath));
             markersFile.transferTo(new File(markersPath));
 
-            String segmentedUrl = segmentationService.runAutomaticSegmentation(imagePath, markersPath);
+            String segmentedUrl = segmentationService.runAutomaticSegmentation(imagePath, markersPath, imageId);
 
             response.put("status", "success");
             response.put("segmentedImageUrl", segmentedUrl);
