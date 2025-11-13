@@ -267,7 +267,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       (s) => s.mode === 'background'
     ).length;
 
-    return objectStrokes > 0 || backgroundStrokes > 0;
+    return objectStrokes > 0 && backgroundStrokes > 0;
   }
 
   private saveCurrentStrokeAsRegion() {
@@ -700,32 +700,45 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       formData.append('image', imgBlob, 'original.png');
       formData.append('markers', markersBlob, 'markers.png');
 
+      if (this.segmentedImageUrl) {
+        const filename = this.extractFilenameFromUrl(this.segmentedImageUrl);
+        if (filename) {
+          formData.append('outputFilename', filename);
+        }
+      }
+
       this.apiService.segmentation(formData).subscribe({
         next: (res: any) => {
           console.log('Resposta da segmentação:', res);
 
           if (res.status === 'success' && res.segmentedImageUrl) {
-            // CORREÇÃO: Construir a URL completa apenas uma vez
-            const baseUrl = 'http://localhost:8080';
-            this.segmentedImageUrl =
-              baseUrl + res.segmentedImageUrl + '?t=' + Date.now();
+            let segmentedImageUrl = res.segmentedImageUrl;
+
+            if (!segmentedImageUrl.startsWith('http')) {
+              if (segmentedImageUrl.startsWith('/')) {
+                segmentedImageUrl = `http://localhost:8080${segmentedImageUrl}`;
+              } else {
+                segmentedImageUrl = `http://localhost:8080/${segmentedImageUrl}`;
+              }
+            }
+
+            const finalImageUrl = segmentedImageUrl + '?t=' + Date.now();
+            this.segmentedImageUrl = finalImageUrl;
 
             console.log(
               'URL final da imagem segmentada:',
               this.segmentedImageUrl
             );
 
-            if (this.segmentedImage?.nativeElement) {
-              this.segmentedImage.nativeElement.src = this.segmentedImageUrl;
-            }
+            this.loadSegmentedImage();
           } else {
             console.warn('Segmentação retornou status de erro:', res);
             alert(
               'Erro na segmentação: ' + (res.message || 'Resposta inválida')
             );
+            this.isSegmenting = false;
+            this.segmentationInProgress = false;
           }
-          this.isSegmenting = false;
-          this.segmentationInProgress = false;
         },
         error: (err) => {
           console.error('Erro na segmentação:', err);
@@ -741,11 +754,103 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private loadSegmentedImage() {
+    if (this.segmentedImage && this.segmentedImage.nativeElement) {
+      this.checkFileAccess(this.segmentedImageUrl);
+
+      const img = new Image();
+
+      img.onload = () => {
+        console.log('✅ Imagem segmentada carregada com sucesso!');
+        this.segmentedImage.nativeElement.src = this.segmentedImageUrl;
+        this.isSegmenting = false;
+        this.segmentationInProgress = false;
+      };
+
+      img.onerror = (err) => {
+        console.error('❌ Erro ao carregar imagem segmentada:', err);
+        console.log('📁 URL tentada:', this.segmentedImageUrl);
+
+        const urlWithoutTimestamp = this.segmentedImageUrl.split('?')[0];
+        console.log('🔄 Tentando sem timestamp:', urlWithoutTimestamp);
+
+        const imgRetry = new Image();
+        imgRetry.onload = () => {
+          this.segmentedImage.nativeElement.src = urlWithoutTimestamp;
+          this.isSegmenting = false;
+          this.segmentationInProgress = false;
+        };
+        imgRetry.onerror = () => {
+          console.error('❌ Falha também sem timestamp');
+          this.isSegmenting = false;
+          this.segmentationInProgress = false;
+
+          this.checkFileAccess(urlWithoutTimestamp);
+
+          alert(
+            'Imagem segmentada foi gerada mas não pode ser carregada (Erro 403). Verifique as permissões do servidor.'
+          );
+        };
+        imgRetry.src = urlWithoutTimestamp;
+      };
+
+      img.src = this.segmentedImageUrl;
+    } else {
+      this.isSegmenting = false;
+      this.segmentationInProgress = false;
+    }
+  }
+
+  private extractFilenameFromUrl(url: string): string | null {
+    try {
+      const cleanUrl = url.split('?')[0];
+      const urlObj = new URL(cleanUrl);
+      const pathname = urlObj.pathname;
+      const segments = pathname.split('/');
+      return segments[segments.length - 1];
+    } catch (error) {
+      console.error('Erro ao extrair filename da URL:', error);
+      return null;
+    }
+  }
+
+  async checkFileAccess(url: string) {
+    const testUrl = url.split('?')[0];
+    console.log('🔍 Verificando acesso ao arquivo:', testUrl);
+
+    try {
+      const response = await fetch(testUrl, { method: 'HEAD' });
+      console.log(
+        '📊 Status do arquivo:',
+        response.status,
+        response.statusText
+      );
+      console.log(
+        '📋 Headers:',
+        Object.fromEntries(response.headers.entries())
+      );
+
+      if (response.status === 200) {
+        console.log('✅ Arquivo existe e é acessível');
+      } else if (response.status === 404) {
+        console.error('❌ Arquivo não encontrado (404)');
+      } else if (response.status === 403) {
+        console.error('❌ Acesso negado (403) - Problema de permissões');
+
+        const img = new Image();
+        img.onerror = () => console.error('❌ Erro também via Image element');
+        img.onload = () => console.log('✅ Carregou via Image element');
+        img.src = testUrl;
+      }
+    } catch (error) {
+      console.error('❌ Erro ao verificar arquivo:', error);
+    }
+  }
+
   async generateMarkersMask(): Promise<Blob> {
     const drawCanvas = this.drawCanvas.nativeElement;
     const img = this.imageElement.nativeElement;
 
-    // Canvas temporário com tamanho original
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = img.naturalWidth;
     tempCanvas.height = img.naturalHeight;
@@ -754,7 +859,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     const scaleX = tempCanvas.width / drawCanvas.width;
     const scaleY = tempCanvas.height / drawCanvas.height;
 
-    // Aplica escala e desenha
     tempCtx.save();
     tempCtx.scale(scaleX, scaleY);
     tempCtx.drawImage(drawCanvas, 0, 0);
@@ -768,22 +872,19 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     );
     const data = imageData.data;
 
-    // Processa pixels para criar máscara (vermelho = background, verde = objeto)
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
       const a = data[i + 3];
 
-      // Verifica se é objeto (verde) ou background (vermelho)
       const isObject = g > 100 && r < 100 && b < 100;
       const isBackground = r > 100 && g < 100 && b < 100;
 
-      // Define cores: vermelho puro para background, verde puro para objeto
-      data[i] = isBackground ? 255 : isObject ? 0 : 0; // R
-      data[i + 1] = isObject ? 255 : isBackground ? 0 : 0; // G
-      data[i + 2] = 0; // B
-      data[i + 3] = isObject || isBackground ? 255 : 0; // A
+      data[i] = isBackground ? 255 : isObject ? 0 : 0;
+      data[i + 1] = isObject ? 255 : isBackground ? 0 : 0;
+      data[i + 2] = 0;
+      data[i + 3] = isObject || isBackground ? 255 : 0;
     }
 
     tempCtx.putImageData(imageData, 0, 0);

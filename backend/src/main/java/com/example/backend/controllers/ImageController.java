@@ -49,22 +49,18 @@ public class ImageController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // Cria diretório uploads se não existir
             File uploadsDir = new File("uploads/");
             uploadsDir.mkdirs();
 
             String imagePath = Paths.get(uploadsDir.getAbsolutePath(), imageFile.getOriginalFilename()).toString();
             String markersPath = Paths.get(uploadsDir.getAbsolutePath(), "markers_" + imageFile.getOriginalFilename()).toString();
 
-            // Salva os arquivos recebidos
             imageFile.transferTo(new File(imagePath));
             markersFile.transferTo(new File(markersPath));
 
-            // Executa a segmentação automática
             String segmentedUrl = segmentationService.runAutomaticSegmentation(imagePath, markersPath);
 
             response.put("status", "success");
-            // CORREÇÃO: Retornar apenas o caminho relativo
             response.put("segmentedImageUrl", segmentedUrl);
             return ResponseEntity.ok(response);
 

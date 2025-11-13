@@ -13,7 +13,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .addResourceLocations("file:uploads/");
 
         registry.addResourceHandler("/segmented/**")
-                .addResourceLocations("file:src/main/resources/static/segmented/")
+                .addResourceLocations("file:segmented/")
                 .setCachePeriod(0);
     }
 }
