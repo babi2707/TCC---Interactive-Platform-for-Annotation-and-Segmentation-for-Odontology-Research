@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -31,7 +32,18 @@ public class SegmentationService {
             throw new IllegalArgumentException("Caminho da máscara não pode ser vazio.");
         }
 
-        String outputFilename = "segmented_" + UUID.randomUUID() + ".png";
+        Optional<Segmented_Image> existingSegmentedImage = segmentedImageRepository.findByImageId(imageId);
+
+        String outputFilename;
+        if(existingSegmentedImage.isPresent()){
+            String existingFilePath = existingSegmentedImage.get().getFile_path();
+            outputFilename = new File(existingFilePath).getName();
+            System.out.println("✅ Reutilizando imagem segmentada existente: " + outputFilename);
+        } else {
+            outputFilename = "segmented_" + UUID.randomUUID() + ".png";
+
+        }
+
         String outputPath = SEGMENTED_DIR + outputFilename;
 
         new File(SEGMENTED_DIR).mkdirs();
@@ -69,11 +81,21 @@ public class SegmentationService {
         Image originalImage = imageRepository.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("Imagem original não encontrada com ID: " + imageId));
 
-        Segmented_Image segmentedImage = new Segmented_Image();
-        segmentedImage.setImage(originalImage);
-        segmentedImage.setFile_path("segmented/" + outputFilename);
-        segmentedImage.setCreatedAt(LocalDateTime.now());
-        segmentedImage.setUpdatedAt(LocalDateTime.now());
+        Segmented_Image segmentedImage;
+
+        if(existingSegmentedImage.isPresent()){
+            segmentedImage = existingSegmentedImage.get();
+            segmentedImage.setFile_path("segmented/" + outputFilename);
+            segmentedImage.setUpdatedAt(LocalDateTime.now());
+            System.out.println("✅ Atualizando imagem segmentada existente (ID: " + segmentedImage.getId() + ")");
+        } else {
+            segmentedImage = new Segmented_Image();
+            segmentedImage.setImage(originalImage);
+            segmentedImage.setFile_path("segmented/" + outputFilename);
+            segmentedImage.setCreatedAt(LocalDateTime.now());
+            segmentedImage.setUpdatedAt(LocalDateTime.now());
+            System.out.println("✅ Criando nova imagem segmentada");
+        }
 
         segmentedImageRepository.save(segmentedImage);
         return "/segmented/" + outputFilename;
