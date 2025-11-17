@@ -32,6 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/image/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/segmented/**").permitAll()
+                        .requestMatchers("/initial_markers/**").permitAll()
                         .requestMatchers("/api/**").permitAll()
 
                         .anyRequest().authenticated()

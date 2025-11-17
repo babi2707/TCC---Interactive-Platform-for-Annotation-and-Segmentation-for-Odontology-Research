@@ -49,4 +49,15 @@ export class ApiService {
   segmentation(formData: FormData) {
     return this.http.post(`${this.apiUrl}/image/segment`, formData);
   }
+
+  generateInitialMarkers(formData: FormData): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/image/generate-initial-markers`,
+      formData,
+      {
+        reportProgress: true,
+        observe: 'events',
+      }
+    );
+  }
 }

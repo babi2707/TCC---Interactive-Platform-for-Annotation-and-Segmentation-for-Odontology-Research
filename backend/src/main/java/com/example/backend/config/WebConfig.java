@@ -15,5 +15,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/segmented/**")
                 .addResourceLocations("file:segmented/")
                 .setCachePeriod(0);
+
+        registry.addResourceHandler("/initial_markers/**")
+                .addResourceLocations("file:initial_markers/")
+                .setCachePeriod(0);
     }
 }

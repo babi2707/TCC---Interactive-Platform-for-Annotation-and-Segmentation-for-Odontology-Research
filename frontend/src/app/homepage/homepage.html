@@ -6,6 +6,16 @@
             {{ segmentationInProgress ? 'Segmenting...' : 'Segment' }}
         </button>
 
+        <div class="together">
+            <button class="auto-markers" matTooltip="Generate Initial Markers with AI"
+                (click)="generateInitialMarkers()" [disabled]="isLoadingInitialMarkers || !imageUrl">
+                <span class="material-symbols-outlined">
+                    {{ isLoadingInitialMarkers ? 'autorenew' : 'auto_awesome' }}
+                </span>
+                {{ isLoadingInitialMarkers ? 'Generating...' : 'Auto Markers' }}
+            </button>
+        </div>
+
         <div class="brush-size-control">
             <input type="range" min="1" max="50" [value]="brushSize" (input)="updateBrushSize($event)" />
             <div class="brush-preview" [ngStyle]="{
@@ -89,6 +99,20 @@
 
         <div class="user-menu">
             <app-profile-symbol></app-profile-symbol>
+        </div>
+    </div>
+
+    <div *ngIf="isLoadingInitialMarkers" class="markers-loading-overlay">
+        <div class="markers-loading-content">
+            <div class="spinner large"></div>
+            <h3>Generating Initial Markers</h3>
+            <p>AI is analyzing your image and creating object/background markers...</p>
+            <div class="progress-info">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <span>This may take a few seconds</span>
+            </div>
         </div>
     </div>
 

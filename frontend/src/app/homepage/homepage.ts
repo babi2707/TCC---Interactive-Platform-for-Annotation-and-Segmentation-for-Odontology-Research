@@ -16,6 +16,7 @@ import { ApiService } from '../api.services';
 import { ColorSketchModule } from 'ngx-color/sketch';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, Subject, Subscription } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
 
 interface BrushStroke {
   x: number;
@@ -57,6 +58,9 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   imageId!: number;
   imageUrl: string = '';
   segmentedImageUrl: string = '';
+
+  isLoadingInitialMarkers: boolean = false;
+  initialMarkersUrl: string = '';
 
   brushX: number = 0;
   brushY: number = 0;
@@ -180,6 +184,231 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  generateInitialMarkers() {
+    if (!this.imageUrl) {
+      alert('Por favor, carregue uma imagem primeiro.');
+      return;
+    }
+
+    this.isLoadingInitialMarkers = true;
+
+    // Criar FormData
+    const formData = new FormData();
+
+    // Buscar a imagem original
+    fetch(this.imageUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Erro ao carregar imagem: ${response.status}`);
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        formData.append('image', blob, 'original.png');
+        formData.append('imageId', this.imageId.toString());
+
+        // Chamar serviço para gerar marcadores iniciais
+        this.apiService.generateInitialMarkers(formData).subscribe({
+          next: (event: any) => {
+            if (event.type === HttpEventType.Response) {
+              const response = event.body;
+
+              if (response.status === 'success') {
+                this.initialMarkersUrl = `http://localhost:8080${response.markersUrl}`;
+
+                // Adicionar timestamp para evitar cache
+                this.initialMarkersUrl += '?t=' + Date.now();
+
+                this.loadInitialMarkersToCanvas(response.stats);
+
+                console.log(
+                  '✅ Marcadores iniciais gerados com sucesso!',
+                  response.stats
+                );
+
+                // Mostrar estatísticas para o usuário
+                const stats =
+                  typeof response.stats === 'string'
+                    ? JSON.parse(response.stats)
+                    : response.stats;
+                this.showMarkersStats(stats);
+              } else {
+                alert('Erro ao gerar marcadores iniciais: ' + response.message);
+              }
+
+              this.isLoadingInitialMarkers = false;
+            }
+          },
+          error: (err) => {
+            console.error('Erro ao gerar marcadores iniciais:', err);
+
+            let errorMessage = 'Erro na comunicação com o servidor';
+            if (err.error && err.error.message) {
+              errorMessage = err.error.message;
+            } else if (err.message) {
+              errorMessage = err.message;
+            }
+
+            alert(errorMessage);
+            this.isLoadingInitialMarkers = false;
+          },
+        });
+      })
+      .catch((error) => {
+        console.error('Erro ao carregar imagem:', error);
+        alert('Erro ao carregar imagem: ' + error.message);
+        this.isLoadingInitialMarkers = false;
+      });
+  }
+
+  private showMarkersStats(stats: any) {
+    const method = stats.method || 'gradcam';
+    const objectMarkers = stats.object_markers || 0;
+    const backgroundMarkers = stats.background_markers || 0;
+
+    let message = `Marcadores gerados com sucesso!\n`;
+    message += `Método: ${
+      method === 'gradcam_deeplabv3' ? 'Grad-CAM' : 'Detecção de Bordas'
+    }\n`;
+    message += `✅ Marcadores de objeto (verde): ${objectMarkers}\n`;
+    message += `🔴 Marcadores de fundo (vermelho): ${backgroundMarkers}\n`;
+    message += `📊 Total: ${objectMarkers + backgroundMarkers} marcadores`;
+
+    // Você pode usar um toast ou modal em vez de alert
+    alert(message);
+  }
+
+  private async loadInitialMarkersToCanvas(stats: any) {
+    try {
+      // Limpar canvas atual
+      this.clearCanvas();
+
+      // Carregar imagem de marcadores
+      const markersImg = new Image();
+      markersImg.crossOrigin = 'anonymous';
+
+      markersImg.onload = () => {
+        console.log(
+          '✅ Imagem de marcadores carregada:',
+          markersImg.width,
+          'x',
+          markersImg.height
+        );
+        this.processMarkersImage(markersImg);
+      };
+
+      markersImg.onerror = (err) => {
+        console.error('❌ Erro ao carregar imagem de marcadores:', err);
+        console.log('📁 URL tentada:', this.initialMarkersUrl);
+
+        // Tentar sem timestamp
+        const urlWithoutTimestamp = this.initialMarkersUrl.split('?')[0];
+        const imgRetry = new Image();
+
+        imgRetry.onload = () => {
+          console.log('✅ Imagem carregada sem timestamp');
+          this.processMarkersImage(imgRetry);
+        };
+
+        imgRetry.onerror = () => {
+          console.error('❌ Falha também sem timestamp');
+          alert(
+            'Imagem de marcadores foi gerada mas não pode ser carregada. Verifique o console para detalhes.'
+          );
+        };
+
+        imgRetry.src = urlWithoutTimestamp;
+      };
+
+      markersImg.src = this.initialMarkersUrl;
+    } catch (error) {
+      console.error('Erro ao processar marcadores iniciais:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      alert('Erro ao processar marcadores: ' + message);
+    }
+  }
+
+  private processMarkersImage(markersImg: HTMLImageElement) {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = markersImg.width;
+    tempCanvas.height = markersImg.height;
+    const tempCtx = tempCanvas.getContext('2d')!;
+
+    tempCtx.drawImage(markersImg, 0, 0);
+    const imageData = tempCtx.getImageData(
+      0,
+      0,
+      tempCanvas.width,
+      tempCanvas.height
+    );
+    const data = imageData.data;
+
+    const scaleX = this.drawCanvas.nativeElement.width / markersImg.width;
+    const scaleY = this.drawCanvas.nativeElement.height / markersImg.height;
+
+    // Limpar strokes anteriores
+    this.brushStrokes = [];
+    this.objectRegions = [];
+
+    // Processar pixels para encontrar marcadores
+    const objectPoints: { x: number; y: number }[] = [];
+    const backgroundPoints: { x: number; y: number }[] = [];
+
+    for (let y = 0; y < markersImg.height; y += 2) {
+      // Amostrar a cada 2 pixels
+      for (let x = 0; x < markersImg.width; x += 2) {
+        const index = (y * markersImg.width + x) * 4;
+        const r = data[index];
+        const g = data[index + 1];
+        const b = data[index + 2];
+        const a = data[index + 3];
+
+        // Verificar se é marcador verde (objeto) - tolerância para variações
+        if (g > 200 && r < 150 && b < 150 && a > 100) {
+          objectPoints.push({ x: x * scaleX, y: y * scaleY });
+        }
+        // Verificar se é marcador vermelho (background)
+        else if (r > 200 && g < 150 && b < 150 && a > 100) {
+          backgroundPoints.push({ x: x * scaleX, y: y * scaleY });
+        }
+      }
+    }
+
+    // Adicionar pontos ao canvas com tamanhos apropriados
+    objectPoints.forEach((point) => {
+      this.addMarkerToCanvas(point.x, point.y, 'object', 15); // Marcadores maiores para objetos
+    });
+
+    backgroundPoints.forEach((point) => {
+      this.addMarkerToCanvas(point.x, point.y, 'background', 10);
+    });
+
+    this.redrawStrokes();
+    console.log(
+      `🎯 Processados ${objectPoints.length} marcadores de objeto e ${backgroundPoints.length} marcadores de fundo`
+    );
+  }
+
+  private addMarkerToCanvas(
+    x: number,
+    y: number,
+    type: 'object' | 'background',
+    size?: number
+  ) {
+    const strokeSize = size || (type === 'object' ? 15 : 10);
+
+    const stroke: BrushStroke = {
+      x,
+      y,
+      size: strokeSize,
+      color:
+        type === 'object' ? this.objectBrushColor : this.backgroundBrushColor,
+      mode: type,
+    };
+
+    this.brushStrokes.push(stroke);
+  }
+
   onMouseMove(event: MouseEvent) {
     const container = event.currentTarget as HTMLElement;
     const rect = container.getBoundingClientRect();
@@ -209,13 +438,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     const drawX = event.clientX - rect.left;
     const drawY = event.clientY - rect.top;
 
-    this.currentStroke.push({
-      x: drawX,
-      y: drawY,
-      mode: this.activeBrushMode,
-      color: this.brushColor,
-    });
-
+    // Desenhar imediatamente no ponto inicial
     this.draw(drawX, drawY, true);
 
     this.saveState();
@@ -229,9 +452,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
   draw(x: number, y: number, isNewStroke: boolean = false) {
     if (!this.ctx) return;
-    if (isNewStroke) this.ctx.beginPath();
-    else this.ctx.lineTo(x, y);
 
+    // Configurar o estilo do pincel
     this.ctx.lineWidth = this.brushSize;
     this.ctx.strokeStyle =
       this.activeBrushMode === 'eraser' ? 'rgba(0,0,0,1)' : this.brushColor;
@@ -239,9 +461,21 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       this.activeBrushMode === 'eraser' ? 'destination-out' : 'source-over';
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
-    if (isNewStroke) this.ctx.moveTo(x, y);
-    this.ctx.stroke();
 
+    if (this.activeBrushMode === 'eraser') {
+      // Para o eraser, desenhar um círculo que apaga
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, this.brushSize / 2, 0, 2 * Math.PI);
+      this.ctx.fill();
+    } else {
+      // Para objetos e background, desenhar um círculo sólido
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, this.brushSize / 2, 0, 2 * Math.PI);
+      this.ctx.fillStyle = this.brushColor;
+      this.ctx.fill();
+    }
+
+    // Adicionar ao array de strokes (apenas se não for eraser)
     if (this.activeBrushMode !== 'eraser') {
       this.brushStrokes.push({
         x,
@@ -251,6 +485,24 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
         mode: this.activeBrushMode,
       });
     }
+
+    // Para o eraser, remover strokes que estão dentro da área apagada
+    if (this.activeBrushMode === 'eraser') {
+      this.removeStrokesInArea(x, y, this.brushSize / 2);
+    }
+  }
+
+  private removeStrokesInArea(
+    eraseX: number,
+    eraseY: number,
+    eraseRadius: number
+  ) {
+    this.brushStrokes = this.brushStrokes.filter((stroke) => {
+      const distance = Math.sqrt(
+        Math.pow(stroke.x - eraseX, 2) + Math.pow(stroke.y - eraseY, 2)
+      );
+      return distance > eraseRadius + stroke.size / 2;
+    });
   }
 
   erase() {
@@ -301,6 +553,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
   redrawStrokes() {
     if (!this.ctx) return;
+
+    // Limpar canvas completamente
     this.ctx.clearRect(
       0,
       0,
@@ -308,23 +562,28 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       this.drawCanvas.nativeElement.height
     );
 
-    this.brushStrokes.forEach((stroke, idx) => {
-      if (
-        idx === 0 ||
-        this.brushStrokes[idx - 1].color !== stroke.color ||
-        this.brushStrokes[idx - 1].size !== stroke.size
-      )
-        this.ctx.beginPath();
-      this.ctx.strokeStyle = stroke.color;
-      this.ctx.lineWidth = stroke.size;
-      this.ctx.moveTo(stroke.x, stroke.y);
-      if (idx < this.brushStrokes.length - 1)
-        this.ctx.lineTo(
-          this.brushStrokes[idx + 1].x,
-          this.brushStrokes[idx + 1].y
-        );
-      this.ctx.stroke();
+    // Desenhar cada stroke como um ponto individual
+    this.brushStrokes.forEach((stroke) => {
+      this.ctx.beginPath();
+
+      if (stroke.mode === 'eraser') {
+        // Para o eraser, usar composição para apagar
+        this.ctx.globalCompositeOperation = 'destination-out';
+        this.ctx.arc(stroke.x, stroke.y, stroke.size / 2, 0, 2 * Math.PI);
+        this.ctx.fill();
+      } else {
+        // Para objetos e background, desenhar círculos sólidos
+        this.ctx.globalCompositeOperation = 'source-over';
+        this.ctx.fillStyle = stroke.color;
+        this.ctx.arc(stroke.x, stroke.y, stroke.size / 2, 0, 2 * Math.PI);
+        this.ctx.fill();
+      }
+
+      this.ctx.closePath();
     });
+
+    // Resetar a composição para o padrão
+    this.ctx.globalCompositeOperation = 'source-over';
   }
 
   clearCanvas() {
