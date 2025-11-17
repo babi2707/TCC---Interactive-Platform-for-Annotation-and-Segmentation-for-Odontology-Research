@@ -94,6 +94,18 @@
                 <button class="dropdown-item" (click)="downloadAnnotations()">
                     Download Markers(TXT)
                 </button>
+                <mat-divider></mat-divider>
+                <button class="dropdown-item" (click)="downloadAnnotationsJSON()">
+                    Download Markers(JSON)
+                </button>
+                <mat-divider></mat-divider>
+                <button class="dropdown-item" (click)="downloadSegmentedImage()">
+                    Download Segmented Image(PNG)
+                </button>
+                <mat-divider></mat-divider>
+                <button class="dropdown-item" (click)="downloadSegmentationMask()">
+                    Download Segmentation Mask(PNG)
+                </button>
             </div>
         </div>
 
@@ -141,7 +153,7 @@
 
         <div class="image-block">
             <h3>Segmented Image {{ isSegmenting ? '(Processing...)' : '' }}</h3>
-            <div class="image-container">
+            <div class="image-container" id="segmented-image">
                 <img [src]="segmentedImageUrl || imageUrl" alt="Segmented Image" #segmentedImage
                     [class.grayscale]="!segmentedImageUrl" [class.loading]="isSegmenting" />
 

@@ -185,6 +185,10 @@
   border: 2px solid #4caf50;
 }
 
+#segmented-image {
+  background-color: #a89ae69a !important;
+}
+
 .segmentation-loading {
   position: absolute;
   top: 50%;
@@ -255,7 +259,7 @@
 
   &.active {
     background-color: #4caf50;
-    color: white;
+    color: black !important;
   }
 
   &:disabled {

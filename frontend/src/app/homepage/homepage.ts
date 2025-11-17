@@ -1141,6 +1141,48 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     return content;
   }
 
+  downloadAnnotationsJSON() {
+    if (!this.imageId) {
+      alert('ID da imagem não encontrado.');
+      return;
+    }
+
+    this.apiService.getAnnotation(this.imageId).subscribe({
+      next: (response) => {
+        if (!response || !response.annotationData) {
+          alert(
+            'Nenhuma anotação encontrada no banco de dados para esta imagem.'
+          );
+          return;
+        }
+
+        const jsonSaved = JSON.stringify(response.annotationData);
+
+        const blob = new Blob([jsonSaved], {
+          type: 'application/json;charset=utf-8',
+        });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `db_annotations_image_${
+          this.imageId
+        }_${new Date().getTime()}.json`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        console.log('Download concluído com dados do banco.');
+      },
+      error: (err) => {
+        console.error('Erro ao buscar anotações:', err);
+        alert('Erro ao baixar anotações do servidor.');
+      },
+    });
+  }
+
   downloadAnnotatedImage() {
     try {
       const canvas = document.createElement('canvas');
@@ -1189,5 +1231,151 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       console.error('Erro ao fazer download da imagem anotada:', error);
       alert('Erro ao fazer download da imagem anotada.');
     }
+  }
+
+  downloadSegmentedImage() {
+    // 1. Verifica se a URL da imagem segmentada existe
+    if (!this.segmentedImageUrl) {
+      alert(
+        'Não há imagem segmentada para baixar. Gere a segmentação primeiro.'
+      );
+      return;
+    }
+
+    console.log('Iniciando download da imagem segmentada...');
+
+    // 2. Remove o timestamp (cache buster) da URL, se houver
+    const urlToFetch = this.segmentedImageUrl.split('?')[0];
+
+    // 3. Usa a API Fetch para buscar a imagem
+    fetch(urlToFetch)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Erro ao buscar a imagem: ${response.status} ${response.statusText}`
+          );
+        }
+        // Converte a resposta em um Blob (Binary Large Object)
+        return response.blob();
+      })
+      .then((blob) => {
+        // 4. Cria um Object URL temporário para o Blob
+        const url = URL.createObjectURL(blob);
+
+        // 5. Cria o link de download
+        const link = document.createElement('a');
+        link.href = url;
+
+        // 6. Extrai o nome do arquivo original da URL para o download
+        let filename = urlToFetch.substring(urlToFetch.lastIndexOf('/') + 1);
+        if (!filename) {
+          filename = `segmented_image_${
+            this.imageId
+          }_${new Date().getTime()}.png`;
+        }
+        link.download = filename; // Define o nome do arquivo para o download
+
+        // 7. Simula o clique no link para iniciar o download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 8. Limpa o Object URL após um curto período
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      })
+      .catch((err) => {
+        console.error('Erro ao fazer download da imagem segmentada:', err);
+        alert(
+          'Erro ao baixar a imagem segmentada. Verifique o console para mais detalhes.'
+        );
+      });
+  }
+
+  downloadSegmentationMask() {
+    if (!this.segmentedImageUrl) {
+      alert(
+        'Não há imagem segmentada para baixar. Gere a segmentação primeiro.'
+      );
+      return;
+    }
+
+    console.log('Iniciando download da máscara P&B...');
+    const urlToFetch = this.segmentedImageUrl.split('?')[0];
+
+    // 1. Criar um canvas e uma imagem na memória
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = 'Anonymous'; // Necessário para ler pixels de uma URL
+
+    img.onload = () => {
+      // 2. Desenhar a imagem RGBA no canvas
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx!.drawImage(img, 0, 0);
+
+      // 3. Ler os dados de pixel (RGBA)
+      const imageData = ctx!.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      // 4. Criar a nova imagem P&B
+      // Iteramos de 4 em 4 (R, G, B, A)
+      for (let i = 0; i < data.length; i += 4) {
+        // data[i+3] é o canal Alpha
+        // Se o alpha for > 128 (é objeto), pinte de branco (255)
+        // Se for < 128 (é fundo), pinte de preto (0)
+        const value = data[i + 3] > 128 ? 255 : 0;
+
+        // O usuário pediu 0 e 1, mas 0 e 255 são visualmente
+        // corretos para um arquivo P&B.
+
+        data[i] = value; // Red
+        data[i + 1] = value; // Green
+        data[i + 2] = value; // Blue
+        data[i + 3] = 255; // Alpha (deixa a máscara opaca)
+      }
+
+      // 5. Colocar os novos dados (P&B) de volta no canvas
+      ctx!.putImageData(imageData, 0, 0);
+
+      // 6. Converter o canvas para Blob e iniciar o download
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          console.error('Erro ao criar o blob da máscara');
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        // Tenta pegar o nome do arquivo original
+        let filename = urlToFetch.substring(urlToFetch.lastIndexOf('/') + 1);
+        filename = filename
+          .replace('_rgba.png', '_mask.png')
+          .replace('.png', '_mask.png');
+        if (!filename.includes('_mask')) {
+          filename = `mask_image_${this.imageId}_${new Date().getTime()}.png`;
+        }
+
+        link.download = filename;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    };
+
+    img.onerror = (err) => {
+      console.error(
+        'Erro ao carregar imagem segmentada para criar máscara:',
+        err
+      );
+      alert('Erro ao carregar a imagem para gerar a máscara.');
+    };
+
+    // Inicia o processo
+    img.src = urlToFetch;
   }
 }
