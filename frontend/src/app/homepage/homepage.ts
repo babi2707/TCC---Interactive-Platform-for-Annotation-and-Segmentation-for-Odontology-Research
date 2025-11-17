@@ -307,23 +307,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private checkSegmentedImageExists(): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (!this.segmentedImageUrl) {
-        resolve(false);
-        return;
-      }
-
-      const urlToCheck = this.segmentedImageUrl.split('?')[0];
-      const img = new Image();
-
-      img.onload = () => resolve(true);
-      img.onerror = () => resolve(false);
-
-      img.src = urlToCheck;
-    });
-  }
-
   private loadSegmentedImageFromDB() {
     this.apiService.getSegmentedImage(this.imageId).subscribe({
       next: (response: any) => {

@@ -66,6 +66,20 @@ export class ImagesList implements OnInit {
     }`;
   }
 
+  getImageItemClasses(img: any): string {
+    const classes = ['image-item'];
+
+    if (img.edited) {
+      classes.push('edited');
+    }
+
+    return classes.join(' ');
+  }
+
+  getImageStatusText(img: any): string {
+    return img.edited ? 'Image Edited' : 'Not edited';
+  }
+
   onImageError(event: any, img: any) {
     console.error('❌ Image load error:', img.file_path);
     event.target.style.display = 'none';

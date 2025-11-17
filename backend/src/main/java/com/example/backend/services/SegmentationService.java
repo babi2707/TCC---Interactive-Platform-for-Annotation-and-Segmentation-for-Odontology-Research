@@ -97,6 +97,7 @@ public class SegmentationService implements ISegmentationImageService {
             System.out.println("✅ Criando nova imagem segmentada");
         }
 
+        originalImage.setEdited(true);
         segmentedImageRepository.save(segmentedImage);
         return "/segmented/" + outputFilename;
     }

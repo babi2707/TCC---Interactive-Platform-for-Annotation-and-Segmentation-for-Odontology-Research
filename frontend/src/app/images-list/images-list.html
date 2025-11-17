@@ -17,6 +17,15 @@
         <div *ngFor="let img of images" class="image-item" (click)="navigateToHomepage(img.id)">
             <img class="preview-image" [src]="getImageUrl(img.file_path)" alt="Image {{ img.id }}"
                 (error)="onImageError($event, img)" (load)="onImageLoad($event, img)" />
+
+            <div class="status-indicator" [ngClass]="{'edited': img.edited, 'not-edited': !img.edited}">
+                <span class="status-text">{{ getImageStatusText(img) }}</span>
+            </div>
+
+            <!-- Badge para imagens editadas -->
+            <div *ngIf="img.edited" class="edited-badge" title="Imagem editada">
+                ✓
+            </div>
         </div>
     </div>
 </div>
