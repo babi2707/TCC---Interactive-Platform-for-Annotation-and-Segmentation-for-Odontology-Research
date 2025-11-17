@@ -60,4 +60,8 @@ export class ApiService {
       }
     );
   }
+
+  getAnnotation(imageId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/annotation/${imageId}`);
+  }
 }

@@ -17,6 +17,7 @@ import { ColorSketchModule } from 'ngx-color/sketch';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, Subject, Subscription } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
+import { nextTick } from 'node:process';
 
 interface BrushStroke {
   x: number;
@@ -777,147 +778,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.applyZoom();
   }
 
-  generateAnnotationsTXT(): string {
-    const canvas = this.drawCanvas.nativeElement;
-    const img = this.imageElement.nativeElement;
-
-    let content = `Anotações da Imagem - ID: ${this.imageId}\n`;
-    content += `Data: ${new Date().toLocaleString()}\n`;
-    content += `Dimensões da Imagem: ${img.naturalWidth} x ${img.naturalHeight}\n`;
-    content += `Dimensões do Canvas: ${canvas.width} x ${canvas.height}\n`;
-    content += '='.repeat(50) + '\n\n';
-
-    const objectGroups = this.groupRegionsByType();
-
-    if (objectGroups.objects.length > 0) {
-      content += 'OBJETOS MARCADOS:\n';
-      content += '-'.repeat(30) + '\n';
-
-      objectGroups.objects.forEach((region, index) => {
-        const bounds = this.calculateRegionBounds(region.points);
-        content += `Objeto ${index + 1}:\n`;
-        content += `  Tipo: Objeto\n`;
-        content += `  Cor: ${region.color}\n`;
-        content += `  Localização: X=${bounds.centerX.toFixed(
-          2
-        )}, Y=${bounds.centerY.toFixed(2)}\n`;
-        content += `  Área Aproximada: ${bounds.width.toFixed(
-          2
-        )} x ${bounds.height.toFixed(2)} pixels\n`;
-        content += `  Pontos de Contorno: ${region.points.length}\n`;
-        content += `  Coordenadas dos Pontos:\n`;
-
-        const samplePoints =
-          region.points.length > 10
-            ? [
-                ...region.points.slice(0, 5),
-                { x: -1, y: -1 },
-                ...region.points.slice(-5),
-              ]
-            : region.points;
-
-        samplePoints.forEach((point, pointIndex) => {
-          if (point.x === -1 && point.y === -1) {
-            content += `    ... (${
-              region.points.length - 10
-            } pontos omitidos) ...\n`;
-          } else {
-            content += `    Ponto ${pointIndex + 1}: X=${point.x.toFixed(
-              2
-            )}, Y=${point.y.toFixed(2)}\n`;
-          }
-        });
-        content += '\n';
-      });
-    }
-
-    if (objectGroups.backgrounds.length > 0) {
-      content += 'ÁREAS DE BACKGROUND MARCADAS:\n';
-      content += '-'.repeat(40) + '\n';
-
-      objectGroups.backgrounds.forEach((region, index) => {
-        const bounds = this.calculateRegionBounds(region.points);
-        content += `Background ${index + 1}:\n`;
-        content += `  Tipo: Background\n`;
-        content += `  Cor: ${region.color}\n`;
-        content += `  Localização: X=${bounds.centerX.toFixed(
-          2
-        )}, Y=${bounds.centerY.toFixed(2)}\n`;
-        content += `  Área Aproximada: ${bounds.width.toFixed(
-          2
-        )} x ${bounds.height.toFixed(2)} pixels\n`;
-        content += `  Pontos de Contorno: ${region.points.length}\n\n`;
-      });
-    }
-
-    content += 'ESTATÍSTICAS:\n';
-    content += '-'.repeat(20) + '\n';
-    content += `Total de Objetos: ${objectGroups.objects.length}\n`;
-    content += `Total de Áreas de Background: ${objectGroups.backgrounds.length}\n`;
-    content += `Total de Regiões: ${this.objectRegions.length}\n`;
-    content += `Total de Pontos Marcados: ${this.brushStrokes.length}\n`;
-
-    return content;
-  }
-
-  private groupRegionsByType(): {
-    objects: ObjectRegion[];
-    backgrounds: ObjectRegion[];
-  } {
-    const objects: ObjectRegion[] = [];
-    const backgrounds: ObjectRegion[] = [];
-
-    this.objectRegions.forEach((region) => {
-      if (region.type === 'object') {
-        objects.push(region);
-      } else {
-        backgrounds.push(region);
-      }
-    });
-
-    return { objects, backgrounds };
-  }
-
-  private calculateRegionBounds(points: { x: number; y: number }[]): {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-    centerX: number;
-    centerY: number;
-    width: number;
-    height: number;
-  } {
-    if (points.length === 0) {
-      return {
-        minX: 0,
-        minY: 0,
-        maxX: 0,
-        maxY: 0,
-        centerX: 0,
-        centerY: 0,
-        width: 0,
-        height: 0,
-      };
-    }
-
-    const minX = Math.min(...points.map((p) => p.x));
-    const minY = Math.min(...points.map((p) => p.y));
-    const maxX = Math.max(...points.map((p) => p.x));
-    const maxY = Math.max(...points.map((p) => p.y));
-
-    return {
-      minX,
-      minY,
-      maxX,
-      maxY,
-      centerX: (minX + maxX) / 2,
-      centerY: (minY + maxY) / 2,
-      width: maxX - minX,
-      height: maxY - minY,
-    };
-  }
-
   toggleDownloadDropdown(event?: MouseEvent) {
     if (event) {
       event.stopPropagation();
@@ -1161,33 +1021,124 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   downloadAnnotations() {
-    try {
-      if (this.objectRegions.length === 0 && this.brushStrokes.length === 0) {
-        alert('Não há anotações para salvar. Desenhe algo na imagem primeiro.');
-        return;
+    if (!this.imageId) {
+      alert('ID da imagem não encontrado.');
+      return;
+    }
+
+    this.apiService.getAnnotation(this.imageId).subscribe({
+      next: (response) => {
+        if (!response || !response.annotationData) {
+          alert(
+            'Nenhuma anotação encontrada no banco de dados para esta imagem.'
+          );
+          return;
+        }
+
+        const jsonSaved = response.annotationData;
+
+        // Gera o texto baseado no JSON vindo do banco
+        const txtContent = this.convertJsonToTxt(jsonSaved, response.createdAt);
+
+        // Processo de download do arquivo
+        const blob = new Blob([txtContent], {
+          type: 'text/plain;charset=utf-8',
+        });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `db_annotations_image_${
+          this.imageId
+        }_${new Date().getTime()}.txt`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+        console.log('Download concluído com dados do banco.');
+      },
+      error: (err) => {
+        console.error('Erro ao buscar anotações:', err);
+        alert('Erro ao baixar anotações do servidor.');
+      },
+    });
+  }
+
+  convertJsonToTxt(data: any, createdDate: string): string {
+    let content = `Anotações (Banco de Dados) - ID Imagem: ${this.imageId}\n`;
+    content += `Data de Criação no Banco: ${new Date(
+      createdDate
+    ).toLocaleString()}\n`;
+    content += `Data do Download: ${new Date().toLocaleString()}\n`;
+
+    // Tenta extrair dimensões se existirem no JSON
+    if (data.imageSize || data.image_size) {
+      const size = data.imageSize || data.image_size;
+      content += `Dimensões Originais: ${size[0]} x ${size[1]}\n`;
+    }
+
+    content += '='.repeat(50) + '\n\n';
+
+    // Verifica se os dados vêm no formato de lista de marcadores (Python Script)
+    const markers = data.markers || data.points || [];
+
+    if (Array.isArray(markers) && markers.length > 0) {
+      // Separar por tipo
+      const objects = markers.filter(
+        (m: any) =>
+          m.label === 'foreground' ||
+          m.label === 'object' ||
+          m.type === 'object'
+      );
+      const backgrounds = markers.filter(
+        (m: any) => m.label === 'background' || m.type === 'background'
+      );
+
+      // --- SEÇÃO DE OBJETOS ---
+      if (objects.length > 0) {
+        content += 'OBJETOS MARCADOS (Pontos/Regiões):\n';
+        content += '-'.repeat(30) + '\n';
+        objects.forEach((obj: any, index: number) => {
+          content += `Objeto ${index + 1}: X=${obj.x}, Y=${obj.y}\n`;
+          if (obj.area) content += `  Área estimada: ${obj.area}\n`;
+        });
+        content += '\n';
       }
 
-      const txtContent = this.generateAnnotationsTXT();
-      const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
+      // --- SEÇÃO DE BACKGROUND ---
+      if (backgrounds.length > 0) {
+        content += 'ÁREAS DE BACKGROUND (Pontos):\n';
+        content += '-'.repeat(30) + '\n';
+        backgrounds.forEach((bg: any, index: number) => {
+          content += `Background ${index + 1}: X=${bg.x}, Y=${bg.y}\n`;
+        });
+        content += '\n';
+      }
 
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `annotations_image_${
-        this.imageId
-      }_${new Date().getTime()}.txt`;
-
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-
-      console.log('Download do arquivo TXT iniciado:', link.download);
-    } catch (error) {
-      console.error('Erro ao fazer download das anotações:', error);
-      alert('Erro ao fazer download das anotações.');
+      // --- ESTATÍSTICAS ---
+      content += 'ESTATÍSTICAS DO ALGORITMO:\n';
+      content += '-'.repeat(20) + '\n';
+      // Tenta pegar stats do JSON ou calcula na hora
+      if (data.stats) {
+        content += `Objetos: ${
+          data.stats.object_markers || data.stats.object || 0
+        }\n`;
+        content += `Backgrounds: ${
+          data.stats.background_markers || data.stats.background || 0
+        }\n`;
+      } else {
+        content += `Objetos Listados: ${objects.length}\n`;
+        content += `Backgrounds Listados: ${backgrounds.length}\n`;
+      }
+    } else {
+      // Fallback se o JSON tiver uma estrutura diferente (ex: desenhado manualmente no front e salvo como Map)
+      content += 'DADOS BRUTOS (Formato JSON):\n';
+      content += JSON.stringify(data, null, 2);
     }
+
+    return content;
   }
 
   downloadAnnotatedImage() {
