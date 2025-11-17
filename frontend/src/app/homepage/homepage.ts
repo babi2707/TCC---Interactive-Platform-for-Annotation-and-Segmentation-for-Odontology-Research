@@ -108,6 +108,12 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   isSegmenting: boolean = false;
   segmentationInProgress: boolean = false;
 
+  private dbSaveSubject = new Subject<void>();
+  isLoadingState: boolean = true;
+  private autoSaveSubject = new Subject<void>();
+  private autoSaveSubscription!: Subscription;
+  private isLeavingPage = false;
+
   constructor(private route: ActivatedRoute, private apiService: ApiService) {}
 
   ngOnInit() {
@@ -115,9 +121,21 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       const id = params.get('imageId');
       if (id) {
         this.imageId = Number(id);
-        this.loadImage();
+        this.loadBaseImageAndState();
       }
     });
+
+    // Configurar auto-save mais agressivo
+    this.autoSaveSubscription = this.autoSaveSubject
+      .pipe(
+        debounceTime(1500) // Reduzido para salvar mais rápido
+      )
+      .subscribe(() => {
+        this._autoSaveToDB();
+      });
+
+    // Salvar antes de sair da página
+    window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
   }
 
   ngAfterViewInit() {
@@ -134,8 +152,58 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
+    this.isLeavingPage = true;
+    this.performFinalSave();
+
+    if (this.autoSaveSubscription) {
+      this.autoSaveSubscription.unsubscribe();
+    }
+
+    window.removeEventListener(
+      'beforeunload',
+      this.handleBeforeUnload.bind(this)
+    );
+  }
+
+  private handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (this.brushStrokes.length > 0) {
+      this.performFinalSaveSync(); // Tentativa síncrona
+      // Opcional: mostrar mensagem de confirmação
+      event.returnValue =
+        'Você tem alterações não salvas. Tem certeza que deseja sair?';
+    }
+  }
+
+  private performFinalSave() {
+    if (this.isLeavingPage && this.brushStrokes.length > 0) {
+      console.log('💾 Salvamento final antes de sair...');
+      this._saveStateToDB(); // Usa o método existente
+    }
+  }
+
+  private performFinalSaveSync() {
+    // Tentativa de salvamento síncrono (pode não funcionar em todos os browsers)
+    if (this.brushStrokes.length > 0) {
+      const xhr = new XMLHttpRequest();
+      xhr.open(
+        'POST',
+        `http://localhost:8080/annotation/${this.imageId}/auto-save`,
+        false
+      );
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      const stateToSave = {
+        brushStrokes: this.brushStrokes,
+        lastSave: new Date().toISOString(),
+        isFinalSave: true,
+      };
+
+      try {
+        xhr.send(JSON.stringify(stateToSave));
+        console.log('✅ Salvamento síncrono realizado');
+      } catch (e) {
+        console.error('❌ Erro no salvamento síncrono:', e);
+      }
     }
   }
 
@@ -166,7 +234,8 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  loadImage() {
+  loadBaseImageAndState() {
+    this.isLoadingState = true;
     this.apiService.findImageById(this.imageId).subscribe({
       next: (data: any) => {
         this.imageUrl = `http://localhost:8080/${data.file_path}`;
@@ -174,14 +243,145 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
         img.onload = () => {
           setTimeout(() => {
             this.resizeCanvas();
-            this.redrawStrokes();
+            // Agora, carregue os dados salvos
+            this.loadSavedState();
           }, 100);
         };
         img.src = this.imageUrl;
       },
       error: (err) => {
         console.error('Erro ao carregar imagem:', err);
+        this.isLoadingState = false;
       },
+    });
+  }
+
+  private loadSavedState() {
+    this.isLoadingState = true;
+
+    console.log('🔄 Carregando estado salvo...');
+
+    // Primeiro: carregar anotações (traços e marcadores)
+    this.apiService.getAnnotation(this.imageId).subscribe({
+      next: (response: any) => {
+        console.log('📥 Resposta das anotações:', response);
+
+        let brushStrokes: BrushStroke[] = [];
+
+        if (response.annotationData?.brushStrokes) {
+          brushStrokes = response.annotationData.brushStrokes;
+          console.log('✅ Carregando brushStrokes do annotationData');
+        } else if (response.brushStrokes) {
+          brushStrokes = response.brushStrokes;
+          console.log('✅ Carregando brushStrokes do formato alternativo');
+        }
+
+        if (brushStrokes.length > 0) {
+          this.brushStrokes = brushStrokes;
+          this.redrawStrokes();
+          console.log(`✅ ${brushStrokes.length} traços carregados do banco`);
+        } else {
+          console.log('ℹ️ Nenhum traço salvo encontrado no banco');
+        }
+
+        // Carregar marcadores iniciais se existirem
+        if (response.filePath) {
+          this.initialMarkersUrl =
+            'http://localhost:8080' + response.filePath + '?t=' + Date.now();
+          console.log(
+            '📍 Marcadores iniciais encontrados:',
+            this.initialMarkersUrl
+          );
+        }
+
+        this.saveState();
+
+        // DEPOIS das anotações, carregar a imagem segmentada
+        this.loadSegmentedImageFromDB();
+      },
+      error: (err) => {
+        console.log('ℹ️ Nenhuma anotação salva encontrada:', err);
+        // Mesmo sem anotações, tentar carregar imagem segmentada
+        this.loadSegmentedImageFromDB();
+      },
+    });
+  }
+
+  private checkSegmentedImageExists(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (!this.segmentedImageUrl) {
+        resolve(false);
+        return;
+      }
+
+      const urlToCheck = this.segmentedImageUrl.split('?')[0];
+      const img = new Image();
+
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+
+      img.src = urlToCheck;
+    });
+  }
+
+  private loadSegmentedImageFromDB() {
+    this.apiService.getSegmentedImage(this.imageId).subscribe({
+      next: (response: any) => {
+        console.log('📥 Resposta completa da imagem segmentada:', response);
+
+        if (response && response.segmentedImageUrl) {
+          // CORREÇÃO PRINCIPAL: Garantir que a URL está correta
+          let segmentedUrl = response.segmentedImageUrl;
+
+          // Se a URL não começa com /, adiciona
+          if (!segmentedUrl.startsWith('/')) {
+            segmentedUrl = '/' + segmentedUrl;
+          }
+
+          // Remover duplicações de "segmented/" se houver
+          segmentedUrl = segmentedUrl.replace(
+            'segmented/segmented/',
+            'segmented/'
+          );
+
+          // Construir URL completa
+          this.segmentedImageUrl = `http://localhost:8080${segmentedUrl}?t=${Date.now()}`;
+
+          console.log(
+            '✅ URL final da imagem segmentada:',
+            this.segmentedImageUrl
+          );
+
+          // Carregar a imagem
+          this.loadSegmentedImage();
+        } else {
+          console.log('ℹ️ Nenhuma imagem segmentada encontrada no banco');
+          this.segmentedImageUrl = ''; // Limpar URL se não existir
+        }
+      },
+      error: (err) => {
+        console.error('❌ Erro ao carregar imagem segmentada:', err);
+        this.segmentedImageUrl = ''; // Limpar em caso de erro
+      },
+    });
+  }
+
+  private triggerDBSave() {
+    this.dbSaveSubject.next();
+  }
+
+  private _saveStateToDB() {
+    if (!this.imageId) return;
+
+    // Apenas salvamos os brushStrokes, pois é a fonte da verdade para o redraw
+    const stateToSave = {
+      brushStrokes: this.brushStrokes,
+      // Você pode adicionar mais dados aqui se precisar
+    };
+
+    this.apiService.saveAnnotation(this.imageId, stateToSave).subscribe({
+      next: () => console.log('✅ Estado salvo automaticamente no DB.'),
+      error: (err) => console.error('❌ Falha ao salvar estado no DB:', err),
     });
   }
 
@@ -385,6 +585,11 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     });
 
     this.redrawStrokes();
+
+    this.saveState();
+
+    // Dispara o salvamento no banco
+    this.triggerDBSave();
     console.log(
       `🎯 Processados ${objectPoints.length} marcadores de objeto e ${backgroundPoints.length} marcadores de fundo`
     );
@@ -426,6 +631,10 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       const drawY = (y - rect.height / 2) / this.zoomLevel + rect.height / 2;
       this.draw(drawX, drawY);
     }
+
+    if (this.drawing && this.brushStrokes.length % 50 === 0) {
+      this.triggerAutoSave();
+    }
   }
 
   startDrawing(event: MouseEvent) {
@@ -449,6 +658,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     this.drawing = false;
     if (this.currentStroke.length > 0) this.saveCurrentStrokeAsRegion();
     if (this.ctx) this.ctx.beginPath();
+    this.triggerAutoSave();
   }
 
   draw(x: number, y: number, isNewStroke: boolean = false) {
@@ -550,6 +760,39 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       ],
     });
     this.redoStack = [];
+
+    // Dispara auto-save imediatamente após cada alteração
+    this.triggerAutoSave();
+  }
+
+  private triggerAutoSave() {
+    this.autoSaveSubject.next();
+  }
+
+  private _autoSaveToDB() {
+    if (!this.imageId || this.brushStrokes.length === 0) return;
+
+    const stateToSave = {
+      brushStrokes: this.brushStrokes,
+      lastAutoSave: new Date().toISOString(),
+      totalStrokes: this.brushStrokes.length,
+      objectStrokes: this.brushStrokes.filter((s) => s.mode === 'object')
+        .length,
+      backgroundStrokes: this.brushStrokes.filter(
+        (s) => s.mode === 'background'
+      ).length,
+    };
+
+    this.apiService.autoSaveAnnotation(this.imageId, stateToSave).subscribe({
+      next: (response) => {
+        console.log('✅ Auto-save realizado:', response);
+      },
+      error: (err) => {
+        console.error('❌ Falha no auto-save:', err);
+        // Tentar novamente após 5 segundos
+        setTimeout(() => this.triggerAutoSave(), 5000);
+      },
+    });
   }
 
   redrawStrokes() {
@@ -598,6 +841,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       this.brushStrokes = [];
       this.objectRegions = [];
       this.currentStroke = [];
+      this.triggerAutoSave();
     }
   }
 
@@ -691,44 +935,32 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
   undo() {
     if (this.undoStack.length === 0) return;
-
-    const current = {
+    const lastState = this.undoStack.pop()!;
+    // Salva o estado ATUAL no Redo
+    this.redoStack.push({
       brushStrokes: [...this.brushStrokes.map((s) => ({ ...s }))],
-      objectRegions: [
-        ...this.objectRegions.map((r) => ({
-          ...r,
-          points: r.points.map((p) => ({ ...p })),
-        })),
-      ],
-    };
-    this.redoStack.push(current);
-
-    const previous = this.undoStack.pop()!;
-    this.brushStrokes = previous.brushStrokes;
-    this.objectRegions = previous.objectRegions;
-
+      objectRegions: [], // Adicione se você usar
+    });
+    // Restaura o estado anterior
+    this.brushStrokes = lastState.brushStrokes;
+    this.objectRegions = lastState.objectRegions;
     this.redrawStrokes();
+    this.triggerAutoSave();
   }
 
   redo() {
     if (this.redoStack.length === 0) return;
-
-    const current = {
+    const nextState = this.redoStack.pop()!;
+    // Salva o estado ATUAL no Undo
+    this.undoStack.push({
       brushStrokes: [...this.brushStrokes.map((s) => ({ ...s }))],
-      objectRegions: [
-        ...this.objectRegions.map((r) => ({
-          ...r,
-          points: r.points.map((p) => ({ ...p })),
-        })),
-      ],
-    };
-    this.undoStack.push(current);
-
-    const next = this.redoStack.pop()!;
-    this.brushStrokes = next.brushStrokes;
-    this.objectRegions = next.objectRegions;
-
+      objectRegions: [], // Adicione se você usar
+    });
+    // Restaura o estado futuro
+    this.brushStrokes = nextState.brushStrokes;
+    this.objectRegions = nextState.objectRegions;
     this.redrawStrokes();
+    this.triggerAutoSave();
   }
 
   get canUndo(): boolean {
@@ -808,6 +1040,7 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.isSegmenting = true;
+    console.log('🔄 Iniciando processo de segmentação...');
 
     try {
       const markersBlob = await this.generateMarkersMask();
@@ -820,20 +1053,17 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
       formData.append('markers', markersBlob, 'markers.png');
       formData.append('imageId', this.imageId.toString());
 
-      if (this.segmentedImageUrl) {
-        const filename = this.extractFilenameFromUrl(this.segmentedImageUrl);
-        if (filename) {
-          formData.append('outputFilename', filename);
-        }
-      }
+      // CORREÇÃO: Não enviar outputFilename - deixar o backend decidir
+      // Isso evita problemas com nomes de arquivo
 
       this.apiService.segmentation(formData).subscribe({
         next: (res: any) => {
-          console.log('Resposta da segmentação:', res);
+          console.log('📨 Resposta da segmentação:', res);
 
           if (res.status === 'success' && res.segmentedImageUrl) {
             let segmentedImageUrl = res.segmentedImageUrl;
 
+            // CORREÇÃO: Garantir formato correto da URL
             if (!segmentedImageUrl.startsWith('http')) {
               if (segmentedImageUrl.startsWith('/')) {
                 segmentedImageUrl = `http://localhost:8080${segmentedImageUrl}`;
@@ -842,17 +1072,19 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
               }
             }
 
+            // CORREÇÃO: Usar timestamp para evitar cache
             const finalImageUrl = segmentedImageUrl + '?t=' + Date.now();
             this.segmentedImageUrl = finalImageUrl;
 
             console.log(
-              'URL final da imagem segmentada:',
+              '✅ URL final da imagem segmentada:',
               this.segmentedImageUrl
             );
 
+            // CORREÇÃO: Carregar a imagem imediatamente após receber a URL
             this.loadSegmentedImage();
           } else {
-            console.warn('Segmentação retornou status de erro:', res);
+            console.error('❌ Segmentação retornou status de erro:', res);
             alert(
               'Erro na segmentação: ' + (res.message || 'Resposta inválida')
             );
@@ -861,77 +1093,116 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
           }
         },
         error: (err) => {
-          console.error('Erro na segmentação:', err);
-          alert('Erro na comunicação com o servidor');
+          console.error('❌ Erro na segmentação:', err);
+          alert('Erro na comunicação com o servidor: ' + err.message);
           this.isSegmenting = false;
           this.segmentationInProgress = false;
         },
       });
     } catch (error) {
-      console.error('Erro ao gerar máscara:', error);
+      console.error('❌ Erro ao gerar máscara:', error);
       this.isSegmenting = false;
       this.segmentationInProgress = false;
     }
   }
 
   private loadSegmentedImage() {
-    if (this.segmentedImage && this.segmentedImage.nativeElement) {
-      this.checkFileAccess(this.segmentedImageUrl);
+    if (!this.segmentedImageUrl) {
+      console.log('ℹ️ Nenhuma URL de imagem segmentada para carregar');
+      return;
+    }
 
-      const img = new Image();
+    console.log('🔄 Iniciando carregamento da imagem segmentada...');
 
-      img.onload = () => {
-        console.log('✅ Imagem segmentada carregada com sucesso!');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      console.log('✅ Imagem segmentada carregada com sucesso!');
+      console.log('📐 Dimensões:', img.width, 'x', img.height);
+
+      // Atualizar o elemento de imagem no template
+      if (this.segmentedImage && this.segmentedImage.nativeElement) {
         this.segmentedImage.nativeElement.src = this.segmentedImageUrl;
+        this.segmentedImage.nativeElement.style.display = 'block';
+        console.log('🎯 Imagem segmentada atribuída ao elemento DOM');
+      }
+
+      this.isSegmenting = false;
+      this.segmentationInProgress = false;
+    };
+
+    img.onerror = (err) => {
+      console.error('❌ Erro ao carregar imagem segmentada:', err);
+
+      // Tentar sem timestamp
+      const urlWithoutTimestamp = this.segmentedImageUrl.split('?')[0];
+      console.log('🔄 Tentando sem timestamp:', urlWithoutTimestamp);
+
+      const imgRetry = new Image();
+      imgRetry.crossOrigin = 'anonymous';
+
+      imgRetry.onload = () => {
+        console.log('✅ Imagem carregada sem timestamp');
+        if (this.segmentedImage && this.segmentedImage.nativeElement) {
+          this.segmentedImage.nativeElement.src = urlWithoutTimestamp;
+          this.segmentedImage.nativeElement.style.display = 'block';
+        }
         this.isSegmenting = false;
         this.segmentationInProgress = false;
       };
 
-      img.onerror = (err) => {
-        console.error('❌ Erro ao carregar imagem segmentada:', err);
-        console.log('📁 URL tentada:', this.segmentedImageUrl);
+      imgRetry.onerror = (retryErr) => {
+        console.error('❌ Falha também sem timestamp:', retryErr);
+        this.isSegmenting = false;
+        this.segmentationInProgress = false;
 
-        const urlWithoutTimestamp = this.segmentedImageUrl.split('?')[0];
-        console.log('🔄 Tentando sem timestamp:', urlWithoutTimestamp);
+        // Verificar acesso ao arquivo
+        this.checkFileAccess(urlWithoutTimestamp);
 
-        const imgRetry = new Image();
-        imgRetry.onload = () => {
-          this.segmentedImage.nativeElement.src = urlWithoutTimestamp;
-          this.isSegmenting = false;
-          this.segmentationInProgress = false;
-        };
-        imgRetry.onerror = () => {
-          console.error('❌ Falha também sem timestamp');
-          this.isSegmenting = false;
-          this.segmentationInProgress = false;
-
-          this.checkFileAccess(urlWithoutTimestamp);
-
-          alert(
-            'Imagem segmentada foi gerada mas não pode ser carregada (Erro 403). Verifique as permissões do servidor.'
-          );
-        };
-        imgRetry.src = urlWithoutTimestamp;
+        // Tentar uma terceira vez com URL alternativa
+        this.tryAlternativeSegmentedUrl();
       };
 
-      img.src = this.segmentedImageUrl;
-    } else {
-      this.isSegmenting = false;
-      this.segmentationInProgress = false;
-    }
+      imgRetry.src = urlWithoutTimestamp;
+    };
+
+    img.src = this.segmentedImageUrl;
   }
 
-  private extractFilenameFromUrl(url: string): string | null {
-    try {
-      const cleanUrl = url.split('?')[0];
-      const urlObj = new URL(cleanUrl);
-      const pathname = urlObj.pathname;
-      const segments = pathname.split('/');
-      return segments[segments.length - 1];
-    } catch (error) {
-      console.error('Erro ao extrair filename da URL:', error);
-      return null;
-    }
+  private tryAlternativeSegmentedUrl() {
+    console.log('🔄 Tentando URL alternativa...');
+
+    // Tentar URL sem o prefixo duplicado
+    const alternativeUrl = this.segmentedImageUrl
+      .replace('//localhost:8080/segmented/', '//localhost:8080/')
+      .split('?')[0];
+
+    console.log('🔧 URL alternativa:', alternativeUrl);
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      console.log('✅ Imagem carregada com URL alternativa!');
+      if (this.segmentedImage && this.segmentedImage.nativeElement) {
+        this.segmentedImage.nativeElement.src = alternativeUrl;
+        this.segmentedImage.nativeElement.style.display = 'block';
+      }
+      this.isSegmenting = false;
+      this.segmentationInProgress = false;
+
+      // Atualizar a URL salva
+      this.segmentedImageUrl = alternativeUrl + '?t=' + Date.now();
+    };
+
+    img.onerror = (err) => {
+      console.error('❌ Falha com URL alternativa:', err);
+      this.isSegmenting = false;
+      this.segmentationInProgress = false;
+    };
+
+    img.src = alternativeUrl;
   }
 
   async checkFileAccess(url: string) {

@@ -2,6 +2,7 @@ package com.example.backend.services;
 
 import com.example.backend.entities.Image;
 import com.example.backend.entities.Segmented_Image;
+import com.example.backend.interfaces.ISegmentationImageService;
 import com.example.backend.repositories.ImageRepository;
 import com.example.backend.repositories.SegmentedImageRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class SegmentationService {
+public class SegmentationService implements ISegmentationImageService {
 
     private static final String PYTHON_PATH = "C:\\Users\\Barbara\\AppData\\Local\\Programs\\Python\\Python311\\python.exe";
     private static final String SCRIPT_PATH = new File("python/interactive_object_segmentation.py").getAbsolutePath();
@@ -98,5 +99,10 @@ public class SegmentationService {
 
         segmentedImageRepository.save(segmentedImage);
         return "/segmented/" + outputFilename;
+    }
+
+    @Override
+    public Optional<Segmented_Image> findSegmentationImageByImageId(Long imageId) {
+        return segmentedImageRepository.findByImageId(imageId);
     }
 }

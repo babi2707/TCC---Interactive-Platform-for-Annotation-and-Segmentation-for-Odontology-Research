@@ -1,10 +1,12 @@
 package com.example.backend.controllers;
 
 import com.example.backend.entities.Image;
+import com.example.backend.entities.Segmented_Image;
 import com.example.backend.services.GradCamMarkerService;
 import com.example.backend.services.SegmentationService;
 import com.example.backend.usecases.findallimagesbydatabase.FindAllImagesByDatabase;
 import com.example.backend.usecases.findimagebyid.FindImageById;
+import com.example.backend.usecases.findsegmentationimagebyimageid.FindSegmentationImageByImageId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +34,7 @@ public class ImageController {
 
     private final FindAllImagesByDatabase findAllImagesByDatabase;
     private final FindImageById findImageById;
+    private final FindSegmentationImageByImageId findSegmentationImageByImageId;
 
     @Autowired
     private SegmentationService segmentationService;
@@ -168,6 +171,38 @@ public class ImageController {
             }
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping(value = "/findSegmentedImageByImageId")
+    public ResponseEntity<Map<String, Object>> getSegmentedImageByImageId(@RequestParam Long imageId) {
+        try {
+            Optional<Segmented_Image> segmentedImageOpt = findSegmentationImageByImageId.execute(imageId);
+
+            if (segmentedImageOpt.isPresent()) {
+                Segmented_Image segmentedImage = segmentedImageOpt.get();
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("id", segmentedImage.getId());
+                response.put("imageId", segmentedImage.getImage().getId());
+                response.put("segmentedImageUrl", segmentedImage.getFile_path());
+                response.put("createdAt", segmentedImage.getCreatedAt());
+                response.put("updatedAt", segmentedImage.getUpdatedAt());
+
+                return ResponseEntity.ok(response);
+            } else {
+                // Retornar objeto vazio em vez de erro
+                Map<String, Object> emptyResponse = new HashMap<>();
+                emptyResponse.put("segmentedImageUrl", null);
+                emptyResponse.put("exists", false);
+                return ResponseEntity.ok(emptyResponse);
+            }
+        } catch (Exception e) {
+            log.error("Erro ao buscar imagem segmentada para imageId: {}", imageId, e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Erro interno do servidor");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResponse);
         }
     }
 }

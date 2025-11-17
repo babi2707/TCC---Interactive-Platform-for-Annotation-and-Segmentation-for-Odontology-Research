@@ -64,4 +64,24 @@ export class ApiService {
   getAnnotation(imageId: number): Observable<any> {
     return this.http.get(`${this.apiUrl}/annotation/${imageId}`);
   }
+
+  saveAnnotation(imageId: number, annotationData: any): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/annotation/${imageId}/save`,
+      annotationData
+    );
+  }
+
+  getSegmentedImage(imageId: number): Observable<any> {
+    return this.http.get(
+      `${this.apiUrl}/image/findSegmentedImageByImageId?imageId=${imageId}`
+    );
+  }
+
+  autoSaveAnnotation(imageId: number, annotationData: any): Observable<any> {
+    return this.http.post(
+      `${this.apiUrl}/annotation/${imageId}/auto-save`,
+      annotationData
+    );
+  }
 }
