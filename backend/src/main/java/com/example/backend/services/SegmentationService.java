@@ -41,7 +41,6 @@ public class SegmentationService {
             System.out.println("✅ Reutilizando imagem segmentada existente: " + outputFilename);
         } else {
             outputFilename = "segmented_" + UUID.randomUUID() + ".png";
-
         }
 
         String outputPath = SEGMENTED_DIR + outputFilename;

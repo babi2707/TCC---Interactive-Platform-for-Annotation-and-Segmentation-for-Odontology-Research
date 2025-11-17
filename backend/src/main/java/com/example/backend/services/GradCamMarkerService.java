@@ -1,5 +1,10 @@
 package com.example.backend.services;
 
+import com.example.backend.entities.Annotation;
+import com.example.backend.entities.Image;
+import com.example.backend.repositories.AnnotationRepository;
+import com.example.backend.repositories.ImageRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,6 +12,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -22,6 +30,8 @@ public class GradCamMarkerService {
     private static final String SCRIPT_PATH = new File("python/gradcam_markers.py").getAbsolutePath();
     private static final String MARKERS_DIR = "initial_markers/";
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final AnnotationRepository annotationRepository;
+    private final ImageRepository imageRepository;
 
     public GradCamResult generateInitialMarkers(String imagePath, Long imageId) throws IOException, InterruptedException {
         if (imagePath == null || imagePath.isBlank()) {
@@ -34,21 +44,36 @@ public class GradCamMarkerService {
             throw new IllegalArgumentException("Arquivo de imagem não encontrado: " + imagePath);
         }
 
+        Optional<Annotation> existingAnnotation = annotationRepository.findByImageId(imageId);
+
         // Criar diretório para marcadores iniciais
         new File(MARKERS_DIR).mkdirs();
 
         // Gerar nome único para o arquivo de marcadores
-        String outputFilename = "markers_" + imageId + "_" + UUID.randomUUID() + ".png";
-        String outputPath = Paths.get(MARKERS_DIR, outputFilename).toString();
+        String outputFilename;
+        String fullOutputPath;
+
+        if (existingAnnotation.isPresent()) {
+            // Se já existe, tentamos reutilizar o nome do arquivo para não encher o disco
+            // (Nota: Cuidado com cache de navegador ao reutilizar nomes)
+            String existingPath = existingAnnotation.get().getFilePath();
+            File oldFile = new File(existingPath.startsWith("/") ? existingPath.substring(1) : existingPath);
+            outputFilename = oldFile.getName();
+        } else {
+            outputFilename = "markers_" + imageId + "_" + UUID.randomUUID() + ".png";
+        }
+
+        // Caminho completo do sistema para passar ao Python
+        fullOutputPath = Paths.get(MARKERS_DIR, outputFilename).toString();
 
         log.info("Gerando marcadores iniciais para imagem: {}", imagePath);
-        log.info("Arquivo de saída: {}", outputPath);
+        log.info("Arquivo de saída: {}", fullOutputPath);
 
         ProcessBuilder pb = new ProcessBuilder(
                 PYTHON_PATH,
                 SCRIPT_PATH,
                 imagePath,
-                outputPath
+                fullOutputPath
         );
 
         pb.environment().put("PYTHONIOENCODING", "utf-8");
@@ -83,14 +108,31 @@ public class GradCamMarkerService {
         }
 
         // Verificar se o arquivo foi gerado
-        File outputFile = new File(outputPath);
+        File outputFile = new File(fullOutputPath);
         if (!outputFile.exists()) {
-            log.error("Arquivo de marcadores não foi gerado: {}", outputPath);
-            throw new RuntimeException("Arquivo de marcadores não foi gerado: " + outputPath);
+            log.error("Arquivo de marcadores não foi gerado: {}", fullOutputPath);
+            throw new RuntimeException("Arquivo de marcadores não foi gerado: " + fullOutputPath);
+        }
+
+        Image originalImage = imageRepository.findById(imageId)
+                .orElseThrow(() -> new RuntimeException("Imagem original não encontrada com ID: " + imageId));
+
+        Annotation annotation;
+
+        if(existingAnnotation.isPresent()){
+            annotation = existingAnnotation.get();
+            annotation.setFilePath("/" + MARKERS_DIR + outputFilename);
+            annotation.setUpdatedAt(LocalDateTime.now());
+        } else {
+            annotation = new Annotation();
+            annotation.setImage(originalImage);
+            annotation.setFilePath("/" + MARKERS_DIR + outputFilename);
+            annotation.setCreatedAt(LocalDateTime.now());
+            annotation.setUpdatedAt(LocalDateTime.now());
         }
 
         log.info("Arquivo de marcadores gerado com sucesso: {} ({} bytes)",
-                outputPath, outputFile.length());
+                fullOutputPath, outputFile.length());
 
         // Se não encontrou JSON na linha, procurar no output completo
         if (jsonResponse == null) {
@@ -99,7 +141,26 @@ public class GradCamMarkerService {
 
         // Parse da resposta JSON
         if (jsonResponse != null && isValidJsonResponse(jsonResponse)) {
-            return new GradCamResult("/initial_markers/" + outputFilename, jsonResponse);
+            try {
+                JsonNode rootNode = objectMapper.readTree(jsonResponse);
+
+                if (rootNode.has("data")) {
+                    JsonNode dataNode = rootNode.get("data");
+
+                    // CONVERSÃO MÁGICA: JsonNode -> Map<String, Object>
+                    Map<String, Object> annotationMap = objectMapper.convertValue(
+                            dataNode,
+                            new TypeReference<Map<String, Object>>() {}
+                    );
+
+                    annotation.setAnnotationData(annotationMap);
+                }
+                annotationRepository.save(annotation);
+                return new GradCamResult("/initial_markers/" + outputFilename, jsonResponse);
+            } catch (Exception e) {
+                log.error("Erro ao converter JSON para Map: ", e);
+                throw new RuntimeException("Erro ao processar dados da anotação", e);
+            }
         } else {
             log.error("Script Grad-CAM não retornou JSON válido. Output completo: {}", output.toString());
             // Mesmo sem JSON válido, se o arquivo foi gerado, retornar sucesso
