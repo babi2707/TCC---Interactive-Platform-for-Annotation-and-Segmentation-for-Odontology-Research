@@ -53,7 +53,7 @@ def generate_markers_from_image_processing(image_np, original_size):
                     cy = int(M["m01"] / M["m00"])
 
                     # Desenha (Visual)
-                    cv2.circle(markers_img, (cx, cy), 10, COLOR_GREEN, -1)
+                    cv2.circle(markers_img, (cx, cy), 5, COLOR_GREEN, -1)
 
                     # Salva Dado (JSON)
                     markers_data.append({
@@ -82,7 +82,7 @@ def generate_markers_from_image_processing(image_np, original_size):
                 if bg_count >= 12: break
 
                 if sure_bg_mask[y, x] == 255:
-                    cv2.circle(markers_img, (x, y), 10, COLOR_RED, -1)
+                    cv2.circle(markers_img, (x, y), 5, COLOR_RED, -1)
                     # Salva Dado (JSON)
                     markers_data.append({
                         "x": x,
