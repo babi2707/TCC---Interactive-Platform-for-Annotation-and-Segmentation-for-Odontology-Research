@@ -1,6 +1,6 @@
 <div class="homepage">
     <div class="toolbar">
-        <button class="logo">Logo</button>
+        <button class="logo"><img src="cell_icon.png" alt="Logo"></button>
         <button class="segmentation" matTooltip="Perform Segmentation" (click)="performManualSegmentation()"
             [disabled]="segmentationInProgress || !hasMarkers()" [class.active]="hasMarkers()">
             {{ segmentationInProgress ? 'Segmenting...' : 'Segment' }}
@@ -112,6 +112,10 @@
         <div class="user-menu">
             <app-profile-symbol></app-profile-symbol>
         </div>
+    </div>
+
+    <div class="button-back">
+        <a href="/database" class="login-link">Return to Databases List</a>
     </div>
 
     <div *ngIf="isLoadingInitialMarkers" class="markers-loading-overlay">

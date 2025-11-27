@@ -6,8 +6,8 @@
 
         <form class="register-database-form" #form="ngForm" (ngSubmit)="onRegisterNewDatabase()">
             <mat-form-field class="name">
-                <mat-label>Enter the database name</mat-label>
-                <input matInput placeholder="database name" [formControl]="name" required />
+                <mat-label>Enter the dataset name</mat-label>
+                <input matInput placeholder="dataset name" [formControl]="name" required />
                 <mat-error *ngIf="errorMessage()">
                     {{ errorMessage() }}
                 </mat-error>
@@ -27,11 +27,11 @@
                 <p *ngFor="let file of selectedFiles">{{ file.name }}</p>
             </div>
 
-            <button class="add-database-button" mat-raised-button color="primary" type="submit">Add database</button>
+            <button class="add-database-button" mat-raised-button color="primary" type="submit">Add dataset</button>
         </form>
 
         <div class="button-back">
-            <a href="/database" class="login-link">Return to Databases List</a>
+            <a href="/database" class="login-link">Return to Datasets List</a>
         </div>
     </div>
 
