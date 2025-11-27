@@ -1,5 +1,35 @@
 <div class="image-container">
-    <h2>Images for {{ databaseName }}</h2>
+    <div class="row-profile">
+        <app-profile-symbol></app-profile-symbol>
+    </div>
+
+    <div class="row-text">
+        <h2>Images for Dataset: {{ databaseName }}</h2>
+
+        <div class="dropdown-wrapper">
+            <span class="material-symbols-outlined" id="more-icon" (click)="toggleDatabaseDropdown(databaseId, $event)">
+                more
+            </span>
+
+            <div class="database-dropdown" *ngIf="openDropdowns[databaseId]" appClickOutside
+                (clickOutside)="closeDatabaseDropdown(databaseId)" (click)="$event.stopPropagation()">
+                <button class="dropdown-item" (click)="navigateToDatabaseEdit(databaseId, $event)">
+                    <span class="material-symbols-outlined">edit</span>
+                    Edit Dataset
+                </button>
+                <mat-divider></mat-divider>
+                <button class="dropdown-item">
+                    <span class="material-symbols-outlined">download</span>
+                    Download Dataset
+                </button>
+                <mat-divider></mat-divider>
+                <button class="dropdown-item" (click)="openDeleteConfirmation(databaseId, $event)">
+                    <span class="material-symbols-outlined">delete</span>
+                    Delete Dataset
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div *ngIf="isLoading">
         <p>Loading images...</p>

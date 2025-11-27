@@ -25,7 +25,6 @@
 }
 
 /* --- BOTÕES DE TEXTO (Logo / Automatic Segmentation) --- */
-.toolbar .logo,
 .toolbar .segmentation,
 .toolbar .auto-markers {
   border: 2px solid #1976d2;
@@ -39,11 +38,27 @@
   transition: all 0.2s ease;
 }
 
-.toolbar .logo:hover,
 .toolbar .segmentation:hover,
 .toolbar .auto-markers:hover {
   background-color: #bbdefb;
   transform: translateY(-1px);
+}
+
+.toolbar .logo {
+  all: unset; /* limpa tudo */
+  cursor: pointer;
+  display: inline-block;
+}
+
+.toolbar .logo:hover {
+  transform: scale(1.2);
+  transition: all 0.5s ease;
+}
+
+.toolbar .logo img {
+  display: block;
+  width: 50px;
+  height: 50px;
 }
 
 /* --- BOTÕES DE ÍCONE --- */
@@ -463,4 +478,10 @@
   color: #555;
   min-width: 50px;
   text-align: center;
+}
+
+.button-back {
+  align-self: self-start;
+  margin-top: 1.2rem;
+  margin-left: 11rem;
 }

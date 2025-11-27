@@ -17,7 +17,6 @@ import { ColorSketchModule } from 'ngx-color/sketch';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, Subject, Subscription } from 'rxjs';
 import { HttpEventType } from '@angular/common/http';
-import { nextTick } from 'node:process';
 
 interface BrushStroke {
   x: number;
@@ -404,11 +403,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
                 this.initialMarkersUrl += '?t=' + Date.now();
 
                 this.loadInitialMarkersToCanvas(response.stats);
-
-                console.log(
-                  '✅ Marcadores iniciais gerados com sucesso!',
-                  response.stats
-                );
 
                 // Mostrar estatísticas para o usuário
                 const stats =

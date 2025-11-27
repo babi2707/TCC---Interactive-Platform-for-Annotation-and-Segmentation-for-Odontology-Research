@@ -2,10 +2,14 @@ import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../api.services';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { MatDividerModule } from '@angular/material/divider';
+import { ProfileSymbol } from "../profile-symbol/profile-symbol";
+import { ClickOutsideDirective } from '../app.clickoutside';
 
 @Component({
   selector: 'app-images-list',
-  imports: [CommonModule],
+  standalone: true,
+  imports: [CommonModule, MatDividerModule, ProfileSymbol, ClickOutsideDirective],
   templateUrl: './images-list.html',
   styleUrls: ['./images-list.scss'],
 })
@@ -14,6 +18,9 @@ export class ImagesList implements OnInit {
   databaseId!: number;
   databaseName: string = '';
   isLoading = true;
+  openDropdowns: Record<string, boolean> = {};
+  showConfirmModal = false;
+  databaseToDelete: number | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -91,5 +98,25 @@ export class ImagesList implements OnInit {
 
   navigateToHomepage(imageId: number) {
     this.router.navigate(['/homepage', imageId]);
+  }
+
+  toggleDatabaseDropdown(key: string | number, event: MouseEvent) {
+    event.stopPropagation();
+    this.openDropdowns[key] = !this.openDropdowns[key];
+  }
+
+  closeDatabaseDropdown(key: string | number) {
+    this.openDropdowns[key] = false;
+  }
+
+  navigateToDatabaseEdit(databaseId: number, event: MouseEvent) {
+    event.stopPropagation();
+    this.router.navigate(['/edit-database', databaseId]);
+  }
+
+  openDeleteConfirmation(databaseId: number, event: MouseEvent) {
+    event.stopPropagation();
+    this.databaseToDelete = databaseId;
+    this.showConfirmModal = true;
   }
 }
