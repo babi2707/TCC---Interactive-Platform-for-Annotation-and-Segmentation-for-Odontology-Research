@@ -53,7 +53,7 @@ def generate_markers_from_image_processing(image_np, original_size):
                     cy = int(M["m01"] / M["m00"])
 
                     # Desenha (Visual)
-                    cv2.circle(markers_img, (cx, cy), 5, COLOR_GREEN, -1)
+                    cv2.circle(markers_img, (cx, cy), 4, COLOR_GREEN, -1)
 
                     # Salva Dado (JSON)
                     markers_data.append({

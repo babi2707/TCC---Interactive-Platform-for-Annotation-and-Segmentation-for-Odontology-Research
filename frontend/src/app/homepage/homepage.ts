@@ -175,7 +175,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
 
   private performFinalSave() {
     if (this.isLeavingPage && this.brushStrokes.length > 0) {
-      console.log('💾 Salvamento final antes de sair...');
       this._saveStateToDB(); // Usa o método existente
     }
   }
@@ -409,7 +408,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
                   typeof response.stats === 'string'
                     ? JSON.parse(response.stats)
                     : response.stats;
-                this.showMarkersStats(stats);
               } else {
                 alert('Erro ao gerar marcadores iniciais: ' + response.message);
               }
@@ -437,23 +435,6 @@ export class Homepage implements OnInit, AfterViewInit, OnDestroy {
         alert('Erro ao carregar imagem: ' + error.message);
         this.isLoadingInitialMarkers = false;
       });
-  }
-
-  private showMarkersStats(stats: any) {
-    const method = stats.method || 'gradcam';
-    const objectMarkers = stats.object_markers || 0;
-    const backgroundMarkers = stats.background_markers || 0;
-
-    let message = `Marcadores gerados com sucesso!\n`;
-    message += `Método: ${
-      method === 'gradcam_deeplabv3' ? 'Grad-CAM' : 'Detecção de Bordas'
-    }\n`;
-    message += `✅ Marcadores de objeto (verde): ${objectMarkers}\n`;
-    message += `🔴 Marcadores de fundo (vermelho): ${backgroundMarkers}\n`;
-    message += `📊 Total: ${objectMarkers + backgroundMarkers} marcadores`;
-
-    // Você pode usar um toast ou modal em vez de alert
-    alert(message);
   }
 
   private async loadInitialMarkersToCanvas(stats: any) {

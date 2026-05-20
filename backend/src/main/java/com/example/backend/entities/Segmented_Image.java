@@ -1,5 +1,6 @@
 package com.example.backend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,6 +20,7 @@ public class Segmented_Image {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id")
+    @JsonIgnore
     private Image image;
 
     @Column(name = "file_path")
